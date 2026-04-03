@@ -1,26 +1,50 @@
 @import "tailwindcss";
+@import "dialkit/styles.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0a0a0c;
+  --sidebar: #111114;
+  --border: #1e1e24;
+  --text: #ededed;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+body { background: var(--bg); color: var(--text); }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+
+/* ── Hide DialKit version/preset toolbar ─────────────────────────── */
+.dialkit-toolbar-add,
+.dialkit-panel-header select,
+.dialkit-panel-header .dialkit-toolbar-copy,
+.dialkit-preset-manager { display: none !important; }
+
+/* ── Presets folder (5th child of root folder-inner) → 2×3 grid ─── */
+.dialkit-folder-root > .dialkit-folder-content .dialkit-folder-inner > .dialkit-folder:nth-child(5) .dialkit-button-group {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Export folder (6th child) → 3×3 grid ────────────────────────── */
+.dialkit-folder-root > .dialkit-folder-content .dialkit-folder-inner > .dialkit-folder:nth-child(6) .dialkit-button-group {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 5px !important;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Compact bento buttons ───────────────────────────────────────── */
+.dialkit-folder-root > .dialkit-folder-content .dialkit-folder-inner > .dialkit-folder:nth-child(5) .dialkit-button {
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  text-align: left !important;
+}
+
+.dialkit-folder-root > .dialkit-folder-content .dialkit-folder-inner > .dialkit-folder:nth-child(6) .dialkit-button {
+  padding: 8px 6px !important;
+  font-size: 10.5px !important;
+  border-radius: 8px !important;
+  text-align: center !important;
 }

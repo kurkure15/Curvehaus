@@ -9,12 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "dialkit": "^1.1.0",
+    "file-saver": "^2.0.5",
+    "motion": "^12.38.0",
     "next": "16.2.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "simplex-noise": "^4.0.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
