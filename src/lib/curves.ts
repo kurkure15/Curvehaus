@@ -185,7 +185,31 @@ function textToPoints(text: string): [number, number][] {
   return normalizePoints(ordered);
 }
 
-function customCurve(p: CurveParams, _steps: number): [number, number][] {
+// Equation evaluator for parametric custom curves (used by gallery presets)
+function buildEvalFn(expr: string): ((t: number) => number) | null {
+  try {
+    const s = expr.replace(/\bsin\b/g,'Math.sin').replace(/\bcos\b/g,'Math.cos').replace(/\btan\b/g,'Math.tan')
+      .replace(/\bsqrt\b/g,'Math.sqrt').replace(/\babs\b/g,'Math.abs').replace(/\bexp\b/g,'Math.exp')
+      .replace(/\bpow\b/g,'Math.pow').replace(/\bPI\b/g,'Math.PI').replace(/\bpi\b/g,'Math.PI').replace(/\^/g,'**');
+    return new Function('t', 'return ' + s) as (t: number) => number;
+  } catch { return null; }
+}
+
+function customCurve(p: CurveParams, steps: number): [number, number][] {
+  // If customY is set, use parametric equation mode (for gallery presets)
+  if (p.customY && p.customY.length > 1) {
+    const fnX = buildEvalFn(p.customX || 'cos(t)');
+    const fnY = buildEvalFn(p.customY || 'sin(t)');
+    if (!fnX || !fnY) return [];
+    const pts: [number, number][] = [];
+    const maxT = p.customRange || 6.28;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * maxT;
+      try { const x = fnX(t), y = fnY(t); if (isFinite(x) && isFinite(y)) pts.push([x, y]); } catch {}
+    }
+    return normalizePoints(pts);
+  }
+  // Otherwise, text-to-path mode
   return textToPoints(p.customX || 'hello');
 }
 

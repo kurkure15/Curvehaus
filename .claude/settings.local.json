@@ -20,7 +20,9 @@
       "Bash(open:*)",
       "Bash(gh api:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(git tag:*)",
+      "Bash(curl -s http://localhost:3000/editor)"
     ]
   }
 }
