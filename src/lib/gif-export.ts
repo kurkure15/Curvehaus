@@ -8,11 +8,12 @@ export async function exportGIF(
   baseColor: string,
   gradientStops: string[],
   gradientAngle: number,
-  size: number = 200,
+  size: number = 300,
+  bgColor: string = '#09090b',
 ): Promise<Blob> {
-  const loopDuration = 1 / ((speed || 0.1) * 0.30);
+  const loopDuration = 1 / ((speed || 1) * 0.30);
   const fps = 30;
-  const totalFrames = Math.round(loopDuration * fps);
+  const totalFrames = Math.ceil(loopDuration * fps);
   const delay = Math.round(1000 / fps);
 
   const canvas = document.createElement('canvas');
@@ -25,19 +26,19 @@ export async function exportGIF(
     quality: 10,
     width: size,
     height: size,
-    transparent: 0x000000 as unknown as string,
     workerScript: '/gif.worker.js',
   });
 
   for (let frame = 0; frame < totalFrames; frame++) {
     const time = frame / fps;
-    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, size, size);
     drawGhost(ctx, size, pts, baseColor);
     drawTrim(ctx, size, pts, L, time, speed, baseColor, gradientStops, gradientAngle);
     gif.addFrame(ctx, { copy: true, delay });
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     gif.on('finished', (blob: Blob) => resolve(blob));
     gif.render();
   });

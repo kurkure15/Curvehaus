@@ -51,7 +51,7 @@ export default function Gallery() {
     const pts = norm(valid);
     const L = cumLen(pts);
     try {
-      const blob = await exportGIF(pts, L, 0.1, baseColor, gradientStops, gradientAngle, 200);
+      const blob = await exportGIF(pts, L, 0.1, baseColor, gradientStops, gradientAngle, 300, '#09090b');
       downloadBlob(blob, `curvehaus-${activePreset.name.toLowerCase().replace(/\s/g, '-')}.gif`);
       toast('GIF downloaded');
     } catch (err) {

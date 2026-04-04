@@ -209,7 +209,7 @@ function DialPanel({
         toast('Recording animation...');
         const normPts = norm(pts.map(p => p as [number, number]));
         const arcL = cumLen(normPts);
-        exportGIFLib(normPts, arcL, anm.speed, styl.strokeColor, [], style.gradientAngle, 200)
+        exportGIFLib(normPts, arcL, anm.speed, styl.strokeColor, [], style.gradientAngle, 300, '#09090b')
           .then(blob => { downloadBlob(blob, `curvehaus-${Date.now()}.gif`); toast('GIF downloaded'); })
           .catch(() => toast('Export failed'));
       }
@@ -423,6 +423,11 @@ function EditorInner() {
 
   return (
     <div className="flex h-screen flex-col items-center justify-center pr-[280px] max-[900px]:pr-0">
+      {/* Back button */}
+      <a href="/" className="fixed left-4 top-4 z-50 flex h-8 items-center gap-1.5 rounded-lg border border-[#27272a] bg-[#111113] px-3 text-[11px] text-[#a1a1aa] transition-colors hover:border-[#3f3f46] hover:text-white">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M19 12H5M5 12l6-6M5 12l6 6" /></svg>
+        Back
+      </a>
       {/* SVG with <g> wrapping path + circles */}
       <svg
         ref={svgRef}
