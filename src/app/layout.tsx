@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased" style={{ fontFamily: 'var(--font-geist-sans), -apple-system, sans-serif' }}>
         {children}
         <DialRoot position="top-right" />
-        <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: '#111113', border: '0.5px solid #27272a', color: '#fafafa', fontSize: '13px' } }} />
+        <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: '#111113', border: '0.5px solid #27272a', color: '#fafafa', fontSize: '12px', width: 'auto', minWidth: 0, maxWidth: '200px', padding: '8px 14px' } }} />
         <AgentationWrapper />
       </body>
     </html>

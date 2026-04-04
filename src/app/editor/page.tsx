@@ -8,9 +8,11 @@ import {
   generatePoints, getCurveInfo, curveParamDefs,
   CURVE_TYPES, CurveType, CurveParams, CurveInfo,
 } from '@/lib/editor-curves';
-import { exportReact, exportCSS, exportSwiftUI } from '@/lib/editor-exports';
+import { exportReact } from '@/lib/editor-exports';
 import { ALL_PRESETS } from '@/lib/presets';
 import { toast } from 'sonner';
+import { exportGIF as exportGIFLib, downloadBlob } from '@/lib/gif-export';
+import { norm, cumLen } from '@/lib/curves';
 
 // ═══════════════════════════════════════════════════════════════════
 
@@ -190,9 +192,6 @@ function DialPanel({
       },
       Export: {
         copyReact: { type: 'action' as const, label: '\u269B React' },
-        copyCSS: { type: 'action' as const, label: '{ } CSS' },
-        copySwift: { type: 'action' as const, label: '\u25C6 SwiftUI' },
-        exportMP4: { type: 'action' as const, label: '\u{1F3AC} MP4' },
         exportGIF: { type: 'action' as const, label: '\u{1F5BC} GIF' },
       },
     };
@@ -206,14 +205,13 @@ function DialPanel({
       const opts = { color: styl.strokeColor, lineWidth: 5.5, ghostOpacity: 0.06, speed: anm.speed, trimLength: 0.08, size: 48, gradientColor: style.gradientColor, gradientAngle: style.gradientAngle };
 
       if (action === 'Export.copyReact') { copyText(exportReact(pts, opts)); toast('React component copied'); }
-      else if (action === 'Export.copyCSS') { copyText(exportCSS(pts, opts)); toast('CSS copied'); }
-      else if (action === 'Export.copySwift') { copyText(exportSwiftUI(pts, opts)); toast('SwiftUI copied'); }
-      else if (action === 'Export.exportMP4') {
-        const svg = svgRef.current;
-        if (svg) { exportMP4(svg, 4600 / (anm.speed || 0.5)); toast('Recording MP4...'); }
-      } else if (action === 'Export.exportGIF') {
-        const svg = svgRef.current;
-        if (svg) { exportGIF(svg); toast('Exporting image...'); }
+      else if (action === 'Export.exportGIF') {
+        toast('Recording animation...');
+        const normPts = norm(pts.map(p => p as [number, number]));
+        const arcL = cumLen(normPts);
+        exportGIFLib(normPts, arcL, anm.speed, styl.strokeColor, [], style.gradientAngle, 200)
+          .then(blob => { downloadBlob(blob, `curvehaus-${Date.now()}.gif`); toast('GIF downloaded'); })
+          .catch(() => toast('Export failed'));
       }
     },
   });

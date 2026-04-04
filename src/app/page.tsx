@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { SECTIONS, ALL_PRESETS } from '@/lib/presets';
-import { gen } from '@/lib/curves';
-import { pointsToSvgPath, exportReact } from '@/lib/exports';
+import { gen, norm, cumLen } from '@/lib/curves';
+import { exportReact } from '@/lib/exports';
+import { exportGIF, downloadBlob } from '@/lib/gif-export';
 import { toast } from 'sonner';
 import Hero from '@/components/Hero';
 import BentoCell from '@/components/BentoCell';
@@ -43,6 +44,22 @@ export default function Gallery() {
     navigator.clipboard.writeText(code).then(() => toast('React component copied'));
   }, [activePreset, baseColor, gradientStops, gradientAngle]);
 
+  const handleExportGIF = useCallback(async () => {
+    toast('Recording animation...');
+    const raw = gen(activePreset.type, activePreset.params);
+    const valid = raw.filter(p => isFinite(p[0]) && isFinite(p[1]));
+    const pts = norm(valid);
+    const L = cumLen(pts);
+    try {
+      const blob = await exportGIF(pts, L, 0.1, baseColor, gradientStops, gradientAngle, 200);
+      downloadBlob(blob, `curvehaus-${activePreset.name.toLowerCase().replace(/\s/g, '-')}.gif`);
+      toast('GIF downloaded');
+    } catch (err) {
+      toast('Export failed');
+      console.error(err);
+    }
+  }, [activePreset, baseColor, gradientStops, gradientAngle]);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Nav */}
@@ -67,14 +84,21 @@ export default function Gallery() {
             gradientAngle={gradientAngle}
             onGradientAngleChange={setGradientAngle}
           />
-          {/* Copy React code button */}
-          <div className="flex shrink-0 justify-center">
+          {/* Action buttons */}
+          <div className="flex shrink-0 justify-center gap-2">
             <button onClick={handleCopyReact} className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[11px] transition-colors hover:bg-[rgba(255,255,255,0.04)]"
               style={{ borderColor: 'var(--border)', color: 'var(--text-2)' }} title="Copy React component">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="3" /><ellipse cx="12" cy="12" rx="10" ry="4.5" /><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(60 12 12)" /><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(120 12 12)" />
               </svg>
               React
+            </button>
+            <button onClick={handleExportGIF} className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[11px] transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-2)' }} title="Download GIF">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2h16v-2" />
+              </svg>
+              GIF
             </button>
           </div>
         </div>
