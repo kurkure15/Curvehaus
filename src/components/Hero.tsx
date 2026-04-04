@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { useRef, useEffect, useMemo, useState, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { gen, norm, cumLen } from '@/lib/curves';
 import { renderLoader } from '@/lib/renderer';
 import type { CurveType } from '@/lib/curves';
@@ -19,6 +20,7 @@ const BASE_COLORS = ['#ffffff', '#f97316', '#a78bfa', '#34d399', '#f472b6'];
 
 export default function Hero({ preset }: { preset: HeroPreset }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
 
@@ -81,7 +83,7 @@ export default function Hero({ preset }: { preset: HeroPreset }) {
             p.set('grad', gradientStops[0].replace('#', ''));
             p.set('angle', String(Math.round(gradientAngle)));
           }
-          router.push('/editor?' + p.toString());
+          startTransition(() => router.push('/editor?' + p.toString()));
         }} className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#27272a] text-[#52525b] hover:border-[#3f3f46] hover:text-[#a1a1aa]">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
             <path d="M7.5 1.5l3 3M2 7.5L8.5 1l3 3L5 10.5 1 11l1-3.5z" />
@@ -128,6 +130,8 @@ export default function Hero({ preset }: { preset: HeroPreset }) {
         {/* Color picker — height always reserved */}
         <ColorPicker open={pickerOpen} onAdd={addStop} />
       </div>
+      {/* Prefetch editor route */}
+      <Link href="/editor" prefetch className="hidden" />
     </div>
   );
 }

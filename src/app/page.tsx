@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SECTIONS, ALL_PRESETS } from '@/lib/presets';
 import Hero from '@/components/Hero';
 import BentoCell from '@/components/BentoCell';
 
 export default function Gallery() {
-  const [activeId, setActiveId] = useState(1);
+  const [activeId, setActiveId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('curvehaus-active');
+      if (saved) return Number(saved);
+    }
+    return 1;
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('curvehaus-active', String(activeId));
+  }, [activeId]);
   const activePreset = ALL_PRESETS.find(p => p.id === activeId) || ALL_PRESETS[0];
 
   return (
