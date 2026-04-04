@@ -32,7 +32,8 @@
       "Bash(git commit -m 'add Vercel Analytics:*)",
       "Bash(git commit -m 'add DialKit to README credits:*)",
       "Bash(ls:*)",
-      "Bash(git commit -m 'update favicon to SVG loader icon:*)"
+      "Bash(git commit -m 'update favicon to SVG loader icon:*)",
+      "Bash(git commit -m 'remove black bg from favicon:*)"
     ]
   }
 }
