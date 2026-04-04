@@ -2,9 +2,18 @@
 
 export function pointsToSvgPath(pts: [number, number][], viewBox = 100): string {
   if (pts.length < 2) return '';
-  // Find bounds
+
+  // Subsample to max 200 points for smaller output
+  let sampled = pts;
+  if (pts.length > 200) {
+    const step = pts.length / 200;
+    sampled = [];
+    for (let i = 0; i < 200; i++) sampled.push(pts[Math.floor(i * step)]);
+    sampled.push(pts[pts.length - 1]);
+  }
+
   let mnx = Infinity, mxx = -Infinity, mny = Infinity, mxy = -Infinity;
-  for (const [x, y] of pts) {
+  for (const [x, y] of sampled) {
     if (x < mnx) mnx = x; if (x > mxx) mxx = x;
     if (y < mny) mny = y; if (y > mxy) mxy = y;
   }
@@ -14,7 +23,7 @@ export function pointsToSvgPath(pts: [number, number][], viewBox = 100): string 
   const ox = viewBox / 2 - ((mnx + mxx) / 2) * scale;
   const oy = viewBox / 2 - ((mny + mxy) / 2) * scale;
 
-  const d = pts.map(([x, y], i) => {
+  const d = sampled.map(([x, y], i) => {
     const px = (x * scale + ox).toFixed(2);
     const py = (y * scale + oy).toFixed(2);
     return i === 0 ? `M${px},${py}` : `L${px},${py}`;
@@ -92,28 +101,40 @@ export function exportSVG(
 
 export function exportReact(
   pts: [number, number][],
-  opts: { color: string; lineWidth: number; speed: number; trimLength: number; size: number },
+  opts: { color: string; lineWidth: number; speed: number; trimLength: number; size: number; gradientColor?: string; gradientAngle?: number },
 ): string {
   const path = pointsToSvgPath(pts);
-  const duration = (2 / opts.speed).toFixed(1);
+  const duration = (1 / ((opts.speed || 0.5) * 0.30)).toFixed(1);
+  const sw = 5.5;
+  const trimFrac = 0.08;
+  const hasGradient = opts.gradientColor && opts.gradientColor !== opts.color;
+  const angle = opts.gradientAngle || 0;
+
+  const gradientDefs = hasGradient ? `
+      <defs>
+        <linearGradient id="loader-grad" gradientUnits="objectBoundingBox"
+          gradientTransform="rotate(${angle - 90} 0.5 0.5)">
+          <stop offset="0%" stopColor="${opts.color}" />
+          <stop offset="100%" stopColor="${opts.gradientColor}" />
+        </linearGradient>
+      </defs>` : '';
+
+  const trimStroke = hasGradient ? '"url(#loader-grad)"' : '{color}';
 
   return `import { motion, useReducedMotion } from "motion/react"
 
 export function Loader({ color = "${opts.color}", size = ${opts.size} }) {
   const reduced = useReducedMotion()
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} role="status" aria-label="Loading">
+    <svg viewBox="0 0 100 100" width={size} height={size} role="status" aria-label="Loading">${gradientDefs}
       <title>Loading</title>
-      {/* Ghost outline */}
-      <path d="${path}" fill="none" stroke={color} strokeWidth={${opts.lineWidth.toFixed(1)}}
-        strokeLinecap="round" opacity={0.12} />
-      {/* Animated trim */}
-      <motion.path d="${path}" fill="none" stroke={color}
-        strokeWidth={${(opts.lineWidth + 0.5).toFixed(1)}} strokeLinecap="round"
-        initial={{ pathLength: 0, pathOffset: 0 }}
-        animate={reduced ? {} : { pathOffset: [0, 1] }}
-        transition={{ duration: ${duration}, repeat: Infinity, ease: "linear" }}
-        style={{ pathLength: ${opts.trimLength} }} />
+      <path d="${path}" fill="none" stroke={color} strokeWidth={${sw}}
+        strokeLinecap="round" opacity={0.06} />
+      <motion.path d="${path}" fill="none" stroke={${trimStroke}}
+        strokeWidth={${sw + 0.5}} strokeLinecap="round"
+        initial={{ pathLength: ${trimFrac}, pathOffset: 0 }}
+        animate={reduced ? { pathLength: ${trimFrac} } : { pathLength: ${trimFrac}, pathOffset: [0, 1] }}
+        transition={{ duration: ${duration}, repeat: Infinity, ease: "linear" }} />
     </svg>
   )
 }`;

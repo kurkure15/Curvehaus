@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SECTIONS, ALL_PRESETS } from '@/lib/presets';
+import { gen } from '@/lib/curves';
+import { pointsToSvgPath, exportReact } from '@/lib/exports';
+import { toast } from 'sonner';
 import Hero from '@/components/Hero';
 import BentoCell from '@/components/BentoCell';
 
@@ -19,12 +22,33 @@ export default function Gallery() {
   }, [activeId]);
   const activePreset = ALL_PRESETS.find(p => p.id === activeId) || ALL_PRESETS[0];
 
+  // Lifted color state — shared between Hero and copy button
+  const [baseColor, setBaseColor] = useState('#ffffff');
+  const [gradientStops, setGradientStops] = useState<string[]>([]);
+  const [gradientAngle, setGradientAngle] = useState(0);
+
+  const handleCopyReact = useCallback(() => {
+    const raw = gen(activePreset.type, activePreset.params);
+    const valid = raw.filter(p => isFinite(p[0]) && isFinite(p[1]));
+    const gradColor = gradientStops.length > 0 ? gradientStops[0] : undefined;
+    const code = exportReact(valid, {
+      color: baseColor,
+      lineWidth: 5.5,
+      speed: 0.1,
+      trimLength: 0.08,
+      size: 48,
+      gradientColor: gradColor,
+      gradientAngle: gradientStops.length > 0 ? gradientAngle : undefined,
+    });
+    navigator.clipboard.writeText(code).then(() => toast('React component copied'));
+  }, [activePreset, baseColor, gradientStops, gradientAngle]);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Nav */}
       <nav className="flex shrink-0 items-center justify-between px-6 py-3">
         <span className="text-[14px] font-semibold tracking-[-0.01em]" style={{ color: 'var(--text)' }}>Curvehaus</span>
-        <a href="https://github.com" target="_blank" rel="noopener noreferrer"
+        <a href="https://github.com/kurkure15/Curvehaus" target="_blank" rel="noopener noreferrer"
           className="text-[12px] hover:underline" style={{ color: 'var(--text-2)' }}>
           GitHub ↗
         </a>
@@ -34,20 +58,23 @@ export default function Gallery() {
       <div className="flex flex-1 gap-6 overflow-hidden p-6">
         {/* Left: Hero */}
         <div className="flex flex-1 flex-col gap-2">
-          <Hero preset={activePreset} />
-          {/* Action buttons */}
-          <div className="flex shrink-0 justify-center gap-2">
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors hover:bg-[rgba(255,255,255,0.04)]"
-              style={{ borderColor: 'var(--border)' }} title="Copy React code">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-                <path d="M4.5 2H2v10h10V9.5M5.5 8.5L12 2M8 2h4v4" />
+          <Hero
+            preset={activePreset}
+            baseColor={baseColor}
+            onBaseColorChange={setBaseColor}
+            gradientStops={gradientStops}
+            onGradientStopsChange={setGradientStops}
+            gradientAngle={gradientAngle}
+            onGradientAngleChange={setGradientAngle}
+          />
+          {/* Copy React code button */}
+          <div className="flex shrink-0 justify-center">
+            <button onClick={handleCopyReact} className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[11px] transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-2)' }} title="Copy React component">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="3" /><ellipse cx="12" cy="12" rx="10" ry="4.5" /><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(60 12 12)" /><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(120 12 12)" />
               </svg>
-            </button>
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors hover:bg-[rgba(255,255,255,0.04)]"
-              style={{ borderColor: 'var(--border)' }} title="Download">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-                <path d="M7 2v7.5M4 7l3 3 3-3M2.5 11h9" />
-              </svg>
+              React
             </button>
           </div>
         </div>

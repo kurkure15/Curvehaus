@@ -10,6 +10,7 @@ import {
 } from '@/lib/editor-curves';
 import { exportReact, exportCSS, exportSwiftUI } from '@/lib/editor-exports';
 import { ALL_PRESETS } from '@/lib/presets';
+import { toast } from 'sonner';
 
 // ═══════════════════════════════════════════════════════════════════
 
@@ -202,17 +203,17 @@ function DialPanel({
       const styl = vals.Style as { strokeColor: string; ghostWidth: number; trimWidth: number; ghostOpacity: number };
       const anm = vals.Animation as { speed: number; trimLength: number };
       const pts = generatePoints(initType, curveParamsFromVals()).filter(p => isFinite(p[0]) && isFinite(p[1]));
-      const opts = { color: styl.strokeColor, lineWidth: styl.trimWidth, ghostOpacity: styl.ghostOpacity, speed: anm.speed, trimLength: anm.trimLength, size: 48 };
+      const opts = { color: styl.strokeColor, lineWidth: 5.5, ghostOpacity: 0.06, speed: anm.speed, trimLength: 0.08, size: 48, gradientColor: style.gradientColor, gradientAngle: style.gradientAngle };
 
-      if (action === 'Export.copyReact') copyText(exportReact(pts, opts));
-      else if (action === 'Export.copyCSS') copyText(exportCSS(pts, opts));
-      else if (action === 'Export.copySwift') copyText(exportSwiftUI(pts, opts));
+      if (action === 'Export.copyReact') { copyText(exportReact(pts, opts)); toast('React component copied'); }
+      else if (action === 'Export.copyCSS') { copyText(exportCSS(pts, opts)); toast('CSS copied'); }
+      else if (action === 'Export.copySwift') { copyText(exportSwiftUI(pts, opts)); toast('SwiftUI copied'); }
       else if (action === 'Export.exportMP4') {
         const svg = svgRef.current;
-        if (svg) exportMP4(svg, 4600 / (anm.speed || 0.5));
+        if (svg) { exportMP4(svg, 4600 / (anm.speed || 0.5)); toast('Recording MP4...'); }
       } else if (action === 'Export.exportGIF') {
         const svg = svgRef.current;
-        if (svg) exportGIF(svg);
+        if (svg) { exportGIF(svg); toast('Exporting image...'); }
       }
     },
   });

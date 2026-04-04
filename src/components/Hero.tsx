@@ -18,15 +18,23 @@ interface HeroPreset {
 
 const BASE_COLORS = ['#ffffff', '#f97316', '#a78bfa', '#34d399', '#f472b6'];
 
-export default function Hero({ preset }: { preset: HeroPreset }) {
+export default function Hero({ preset, baseColor, onBaseColorChange, gradientStops, onGradientStopsChange, gradientAngle, onGradientAngleChange }: {
+  preset: HeroPreset;
+  baseColor: string;
+  onBaseColorChange: (c: string) => void;
+  gradientStops: string[];
+  onGradientStopsChange: (s: string[]) => void;
+  gradientAngle: number;
+  onGradientAngleChange: (a: number) => void;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
 
-  const [baseColor, setBaseColor] = useState('#ffffff');
-  const [gradientStops, setGradientStops] = useState<string[]>([]);
-  const [gradientAngle, setGradientAngle] = useState(0);
+  const setBaseColor = onBaseColorChange;
+  const setGradientStops = onGradientStopsChange;
+  const setGradientAngle = onGradientAngleChange;
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const data = useMemo(() => {
@@ -56,13 +64,13 @@ export default function Hero({ preset }: { preset: HeroPreset }) {
   }, [data, baseColor, gradientStops, gradientAngle]);
 
   const addStop = useCallback((hex: string) => {
-    setGradientStops(s => [...s, hex]);
+    onGradientStopsChange([...gradientStops, hex]);
     setPickerOpen(false);
-  }, []);
+  }, [gradientStops, onGradientStopsChange]);
 
   const removeStop = useCallback((i: number) => {
-    setGradientStops(s => s.filter((_, idx) => idx !== i));
-  }, []);
+    onGradientStopsChange(gradientStops.filter((_, idx) => idx !== i));
+  }, [gradientStops, onGradientStopsChange]);
 
   return (
     <div className="flex flex-1 flex-col rounded-2xl border border-[#27272a]/50 bg-[#111113]">
