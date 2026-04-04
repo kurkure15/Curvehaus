@@ -1,102 +1,164 @@
-export interface TrimPathOptions {
-  trimStart: number;
-  trimEnd: number;
-  ghostOpacity: number;
-  strokeColor: string;
-  lineWidth: number;
-  showHeadDot: boolean;
+import { cumLen, ptAt } from './curves';
+
+// ── Color utilities ─────────────────────────────────────────────────
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
-export function renderTrimPath(
+function lerpRgb(a: [number, number, number], b: [number, number, number], t: number): string {
+  return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+}
+
+export function interpolateGradient(
+  baseColor: string,
+  stops: string[],
+  frac: number,
+  shiftFrac: number,
+): string {
+  if (stops.length === 0) return baseColor;
+  const colors = [baseColor, ...stops];
+  const shifted = ((frac + shiftFrac) % 1 + 1) % 1;
+  const idx = shifted * (colors.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.min(lo + 1, colors.length - 1);
+  const t = idx - lo;
+  return lerpRgb(hexToRgb(colors[lo]), hexToRgb(colors[hi]), t);
+}
+
+// ── Ghost (offscreen canvas trick to avoid intersection dots) ───────
+
+export function drawGhost(
   ctx: CanvasRenderingContext2D,
-  points: [number, number][],
-  options: TrimPathOptions,
-  canvasWidth: number,
-  canvasHeight: number,
+  sz: number,
+  pts: [number, number][],
+  color: string,
 ) {
-  if (points.length < 2) return;
+  const off = document.createElement('canvas');
+  off.width = sz; off.height = sz;
+  const oc = off.getContext('2d')!;
+  const sw = 0.055 * sz;
 
-  const size = Math.min(canvasWidth, canvasHeight);
-  const ox = canvasWidth / 2;
-  const oy = canvasHeight / 2;
-  const scale = size / 2;
-  const px = (p: [number, number]) => ox + p[0] * scale;
-  const py = (p: [number, number]) => oy + p[1] * scale;
-  const N = points.length;
-  const last = N - 1;
+  oc.strokeStyle = color;
+  oc.lineWidth = sw;
+  oc.lineCap = 'round';
+  oc.lineJoin = 'round';
+  oc.globalAlpha = 1;
+  oc.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const x = pts[i][0] * sz, y = pts[i][1] * sz;
+    i === 0 ? oc.moveTo(x, y) : oc.lineTo(x, y);
+  }
+  oc.closePath();
+  oc.stroke();
 
-  // ── Ghost outline: full shape, same lineWidth, low opacity ────
-  ctx.save();
-  ctx.globalAlpha = options.ghostOpacity;
-  ctx.strokeStyle = options.strokeColor;
-  ctx.lineWidth = options.lineWidth;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.moveTo(px(points[0]), py(points[0]));
-  for (let i = 1; i < N; i++) ctx.lineTo(px(points[i]), py(points[i]));
-  ctx.closePath();
-  ctx.stroke();
-  ctx.restore();
-
-  // ── Bright trim segment: slightly thicker, full opacity ───────
-  const rawStart = options.trimStart;
-  const rawEnd = options.trimEnd;
-  if (Math.abs(rawEnd - rawStart) < 0.0005) return;
-
-  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.drawImage(off, 0, 0, sz, sz);
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = options.strokeColor;
-  ctx.lineWidth = options.lineWidth + 0.5;
+}
+
+// ── Trim path (continuous bands — no visible circles) ───────────────
+
+export function drawTrim(
+  ctx: CanvasRenderingContext2D,
+  sz: number,
+  pts: [number, number][],
+  L: number[],
+  time: number,
+  speed: number,
+  baseColor: string,
+  gradientStops: string[],
+  gradientAngle: number,
+) {
+  if (pts.length < 2) return;
+
+  const lw = 0.055 * sz;
+  const trimFrac = 0.08;
+
+  // Convert to pixel space ONCE, compute pixel arc length
+  const pxX = new Float64Array(pts.length);
+  const pxY = new Float64Array(pts.length);
+  for (let i = 0; i < pts.length; i++) {
+    pxX[i] = pts[i][0] * sz;
+    pxY[i] = pts[i][1] * sz;
+  }
+  let pixLen = 0;
+  for (let i = 1; i < pts.length; i++) {
+    pixLen += Math.hypot(pxX[i] - pxX[i - 1], pxY[i] - pxY[i - 1]);
+  }
+  if (pixLen < 1) return;
+
+  const trimLen = trimFrac * pixLen;
+  const totalArcLen = L[L.length - 1] || 1;
+  // Trim position driven ONLY by time + speed — knob does NOT move the trim
+  const headDist = ((time * speed * totalArcLen * 0.30)) % totalArcLen;
+  const tailDist = ((headDist - totalArcLen * trimFrac) % totalArcLen + totalArcLen) % totalArcLen;
+  const tailPos = ((headDist * pixLen / totalArcLen - trimLen) % pixLen + pixLen) % pixLen;
+
+  // Build colors array
+  const allColors = [baseColor, ...gradientStops];
+
+  // Build strokeStyle: solid color or linear gradient
+  let style: string | CanvasGradient;
+  if (gradientStops.length === 0) {
+    const rgb = hexToRgb(baseColor);
+    style = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  } else {
+    // Gradient direction controlled by angle knob — rotates around canvas center
+    const rad = (gradientAngle - 90) * Math.PI / 180;
+    const cx = sz / 2, cy = sz / 2, len = sz * 0.5;
+    const grad = ctx.createLinearGradient(
+      cx - Math.cos(rad) * len, cy - Math.sin(rad) * len,
+      cx + Math.cos(rad) * len, cy + Math.sin(rad) * len,
+    );
+    for (let i = 0; i < allColors.length; i++) {
+      grad.addColorStop(i / (allColors.length - 1), allColors[i]);
+    }
+    style = grad;
+  }
+
+  // ONE path, ONE stroke — zero breaks
+  ctx.beginPath();
+  ctx.moveTo(pxX[0], pxY[0]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pxX[i], pxY[i]);
+
+  ctx.lineWidth = lw;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.shadowColor = options.strokeColor;
-  ctx.shadowBlur = options.lineWidth * 3;
-  ctx.beginPath();
-
-  if (rawStart < 0) {
-    const tailIdx = Math.max(0, Math.floor((1 + rawStart) * last));
-    const headIdx = Math.min(last, Math.floor(rawEnd * last));
-    ctx.moveTo(px(points[tailIdx]), py(points[tailIdx]));
-    for (let i = tailIdx + 1; i < N; i++) ctx.lineTo(px(points[i]), py(points[i]));
-    for (let i = 0; i <= headIdx; i++) ctx.lineTo(px(points[i]), py(points[i]));
-  } else {
-    const si = Math.max(0, Math.floor(rawStart * last));
-    const ei = Math.min(last, Math.floor(rawEnd * last));
-    if (ei > si) {
-      ctx.moveTo(px(points[si]), py(points[si]));
-      for (let i = si + 1; i <= ei; i++) ctx.lineTo(px(points[i]), py(points[i]));
-    }
-  }
+  ctx.setLineDash([trimLen, pixLen - trimLen]);
+  ctx.lineDashOffset = -(tailPos % pixLen);
+  ctx.strokeStyle = style;
   ctx.stroke();
-  ctx.restore();
+  ctx.setLineDash([]);
+}
 
-  // ── Head dot: outer glow halo + solid core ────────────────────
-  if (options.showHeadDot) {
-    const ei = Math.max(0, Math.min(Math.floor(rawEnd * last), last));
-    const hx = px(points[ei]);
-    const hy = py(points[ei]);
+// ── Full render (ghost + trim) ──────────────────────────────────────
 
-    // Outer halo (6px, 0.3 alpha)
-    ctx.save();
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = options.strokeColor;
-    ctx.shadowColor = options.strokeColor;
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.arc(hx, hy, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+export function renderLoader(
+  ctx: CanvasRenderingContext2D,
+  sz: number,
+  pts: [number, number][],
+  L: number[],
+  time: number,
+  speed: number,
+  baseColor: string,
+  gradientStops: string[],
+  gradientAngle: number,
+) {
+  ctx.clearRect(0, 0, sz, sz);
+  drawGhost(ctx, sz, pts, baseColor);
+  drawTrim(ctx, sz, pts, L, time, speed, baseColor, gradientStops, gradientAngle);
+}
 
-    // Solid core (3px)
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = options.strokeColor;
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.arc(hx, hy, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
+// ── Ghost only (for bento cells at rest) ────────────────────────────
+
+export function renderGhostOnly(
+  ctx: CanvasRenderingContext2D,
+  sz: number,
+  pts: [number, number][],
+  color: string,
+) {
+  ctx.clearRect(0, 0, sz, sz);
+  drawGhost(ctx, sz, pts, color);
 }

@@ -6,7 +6,7 @@ import { DialRoot } from 'dialkit';
 
 export const metadata: Metadata = {
   title: 'Curvehaus — Mathematical Curve Loaders',
-  description: 'Pick a loader. Copy the code. Beautiful animated loaders from mathematical curves.',
+  description: 'Pick a loader. Copy the code.',
 };
 
 export const viewport: Viewport = {
@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="min-h-screen bg-[#0a0a0a] text-[#fafafa] antialiased" style={{ fontFamily: 'var(--font-geist-sans), -apple-system, sans-serif' }}>
+      <body className="antialiased" style={{ fontFamily: 'var(--font-geist-sans), -apple-system, sans-serif' }}>
         {children}
         <DialRoot position="top-right" />
       </body>

@@ -7,9 +7,9 @@ import { useDialKit } from 'dialkit';
 import {
   generatePoints, getCurveInfo, curveParamDefs,
   CURVE_TYPES, CurveType, CurveParams, CurveInfo,
-} from '@/lib/curves';
-import { exportReact, exportCSS, exportSwiftUI } from '@/lib/exports';
-import { PRESETS } from '@/lib/presets';
+} from '@/lib/editor-curves';
+import { exportReact, exportCSS, exportSwiftUI } from '@/lib/editor-exports';
+import { ALL_PRESETS } from '@/lib/presets';
 
 // ═══════════════════════════════════════════════════════════════════
 
@@ -289,20 +289,24 @@ function EditorInner() {
   // Load preset from URL ?preset=N
   useEffect(() => {
     const pid = searchParams.get('preset');
-    if (pid) {
-      const preset = PRESETS.find(p => p.id === Number(pid));
-      if (preset) {
-        const type = preset.curveType as CurveType;
-        setState(s => ({
-          ...s, curveType: type,
-          params: buildParams(type, preset.params as Partial<CurveParams>),
-          strokeColor: preset.color,
-        }));
-        setActiveType(type);
-        setActiveColor(preset.color);
-        setDialKey(k => k + 1);
-      }
-    }
+    if (!pid) return;
+    const preset = ALL_PRESETS.find(p => p.id === Number(pid));
+    if (!preset) return;
+    const typeMap: Record<string, string> = { h: 'hypotrochoid', r: 'rose', l: 'lissajous', s: 'superformula', e: 'custom' };
+    const type = (typeMap[preset.type] || 'hypotrochoid') as CurveType;
+    // Map array params to named params
+    const paramMap: Record<string, Partial<CurveParams>> = {
+      h: { a: Number(preset.params[0]), b: Number(preset.params[1]), c: Number(preset.params[2]) },
+      r: { petals: Number(preset.params[0]), a: Number(preset.params[1] || 0) },
+      l: { b: Number(preset.params[0]), d: Number(preset.params[1]), c: Number(preset.params[2] || 0) },
+      s: { m: Number(preset.params[0]), n1: Number(preset.params[1]), n2: Number(preset.params[2]) },
+      e: { customX: String(preset.params[0]), customY: String(preset.params[1]), customRange: Number(preset.params[2] || 6.28) },
+    };
+    const mapped = paramMap[preset.type] || {};
+    setState(s => ({ ...s, curveType: type, params: buildParams(type, mapped), strokeColor: '#ffffff' }));
+    setActiveType(type);
+    setActiveColor('#ffffff');
+    setDialKey(k => k + 1);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Generate mapped points in viewBox 0-100 space
