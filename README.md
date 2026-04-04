@@ -183,6 +183,7 @@ src/
 
 - Curve math: [Spirograph](https://en.wikipedia.org/wiki/Spirograph), [Superformula](https://en.wikipedia.org/wiki/Superformula)
 - Gallery concept: [@paidax01/math-curve-loaders](https://github.com/Paidax01/math-curve-loaders)
+- Editor controls: [DialKit](https://dialkit.dev)
 - Toast: [Sonner](https://sonner.emilkowal.ski) by Emil Kowalski
 
 ## License
