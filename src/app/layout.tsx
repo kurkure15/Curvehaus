@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { DialRoot } from 'dialkit';
 import { Toaster } from 'sonner';
+import { Analytics } from '@vercel/analytics/react';
 import AgentationWrapper from '@/components/AgentationWrapper';
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <DialRoot position="top-right" />
         <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: '#111113', border: '0.5px solid #27272a', color: '#fafafa', fontSize: '12px', width: 'auto', minWidth: 0, maxWidth: '200px', padding: '8px 14px' } }} />
+        <Analytics />
         <AgentationWrapper />
       </body>
     </html>
