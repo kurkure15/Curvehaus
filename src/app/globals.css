@@ -16,7 +16,14 @@ body { background: var(--bg); color: var(--text); }
 
 ::-webkit-scrollbar { width: 0; height: 0; }
 
-/* DialKit overrides (editor page) */
+/* DialKit overrides */
 .dialkit-toolbar-add, .dialkit-panel-header select,
 .dialkit-panel-header .dialkit-toolbar-copy,
 .dialkit-preset-manager { display: none !important; }
+.dialkit-panel-toolbar { display: none !important; }
+
+/* Remove top border on folders */
+.dialkit-folder:not(.dialkit-folder-root) { border-top: none !important; }
+
+/* Rotate collapse icon to × when panel is open */
+.dialkit-folder-root > .dialkit-folder-header .dialkit-folder-icon { transform: rotate(45deg) !important; }

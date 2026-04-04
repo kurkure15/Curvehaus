@@ -12,7 +12,7 @@ export default function Gallery() {
   return (
     <div className="flex h-screen flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Nav */}
-      <nav className="flex shrink-0 items-center justify-between border-b px-6 py-3" style={{ borderColor: 'var(--border)' }}>
+      <nav className="flex shrink-0 items-center justify-between px-6 py-3">
         <span className="text-[14px] font-semibold tracking-[-0.01em]" style={{ color: 'var(--text)' }}>Curvehaus</span>
         <a href="https://github.com" target="_blank" rel="noopener noreferrer"
           className="text-[12px] hover:underline" style={{ color: 'var(--text-2)' }}>

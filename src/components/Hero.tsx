@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { gen, norm, cumLen } from '@/lib/curves';
 import { renderLoader } from '@/lib/renderer';
 import type { CurveType } from '@/lib/curves';
@@ -17,6 +18,7 @@ interface HeroPreset {
 const BASE_COLORS = ['#ffffff', '#f97316', '#a78bfa', '#34d399', '#f472b6'];
 
 export default function Hero({ preset }: { preset: HeroPreset }) {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
 
@@ -65,8 +67,22 @@ export default function Hero({ preset }: { preset: HeroPreset }) {
       {/* Shape area — vertically centered */}
       <div className="flex flex-1 flex-col items-center justify-center gap-3">
         <canvas ref={canvasRef} style={{ width: 200, height: 200 }} className="block" />
-        {/* Edit button placeholder */}
-        <button className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#27272a] text-[#52525b] hover:border-[#3f3f46] hover:text-[#a1a1aa]">
+        {/* Edit button — navigates to /editor with ALL current settings */}
+        <button onClick={() => {
+          const p = new URLSearchParams();
+          p.set('preset', String(preset.id));
+          p.set('color', baseColor.replace('#', ''));
+          p.set('gw', '5.5');   // ghost width (matches gallery renderer)
+          p.set('tw', '5.5');   // trim width
+          p.set('tl', '0.08');  // trim length (8% of path)
+          p.set('sp', '0.1');   // speed
+          p.set('go', '0.06');  // ghost opacity
+          if (gradientStops.length > 0) {
+            p.set('grad', gradientStops[0].replace('#', ''));
+            p.set('angle', String(Math.round(gradientAngle)));
+          }
+          router.push('/editor?' + p.toString());
+        }} className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#27272a] text-[#52525b] hover:border-[#3f3f46] hover:text-[#a1a1aa]">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
             <path d="M7.5 1.5l3 3M2 7.5L8.5 1l3 3L5 10.5 1 11l1-3.5z" />
           </svg>

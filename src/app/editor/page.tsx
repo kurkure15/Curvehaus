@@ -19,15 +19,14 @@ interface CurveState {
   speed: number;
   trimLength: number;
   strokeColor: string;
-  strokeWidth: number;
-  particleSize: number;
+  ghostWidth: number;
+  trimWidth: number;
   ghostOpacity: number;
-  particleCount: number;
+  gradientColor: string;
+  gradientAngle: number;
   customX: string;
   customY: string;
 }
-
-const MAX_PARTICLES = 120;
 
 // ═══════════════════════════════════════════════════════════════════
 
@@ -156,12 +155,13 @@ async function exportMP4(svgEl: SVGSVGElement, durationMs: number) {
 // ═══════════════════════════════════════════════════════════════════
 
 function DialPanel({
-  initType, initParams, initColor,
+  initType, initParams, initColor, initStyle,
   onStateChange, onTypeChange, svgRef,
 }: {
   initType: CurveType;
   initParams: Record<string, number>;
   initColor: string;
+  initStyle: { ghostWidth: number; trimWidth: number; trimLength: number; speed: number; ghostOpacity: number; gradientColor: string; gradientAngle: number };
   onStateChange: (partial: Partial<CurveState>) => void;
   onTypeChange: (type: CurveType, color: string) => void;
   svgRef: React.RefObject<SVGSVGElement | null>;
@@ -176,15 +176,16 @@ function DialPanel({
       Curve: { curveType: { type: 'select' as const, options: CURVE_TYPES as unknown as string[], default: initType } },
       Parameters: paramSliders,
       Animation: {
-        speed: [0.5, 0.05, 2.0, 0.05] as [number, number, number, number],
-        trimLength: [0.38, 0.1, 0.7, 0.01] as [number, number, number, number],
+        speed: [initStyle.speed, 0.05, 2.0, 0.05] as [number, number, number, number],
+        trimLength: [initStyle.trimLength, 0.01, 0.7, 0.01] as [number, number, number, number],
       },
       Style: {
         strokeColor: { type: 'color' as const, default: initColor },
-        strokeWidth: [2.0, 0.5, 5.0, 0.1] as [number, number, number, number],
-        particleSize: [3.0, 0.5, 6.0, 0.1] as [number, number, number, number],
-        ghostOpacity: [0.1, 0.02, 0.25, 0.01] as [number, number, number, number],
-        particles: [120, 24, 120, 1] as [number, number, number, number],
+        gradientColor: { type: 'color' as const, default: initStyle.gradientColor },
+        ghostWidth: [initStyle.ghostWidth, 0.5, 8.0, 0.1] as [number, number, number, number],
+        trimWidth: [initStyle.trimWidth, 0.5, 8.0, 0.1] as [number, number, number, number],
+        ghostOpacity: [initStyle.ghostOpacity, 0.02, 0.25, 0.01] as [number, number, number, number],
+        gradientAngle: [initStyle.gradientAngle, 0, 360, 1] as [number, number, number, number],
       },
       Export: {
         copyReact: { type: 'action' as const, label: '\u269B React' },
@@ -196,12 +197,12 @@ function DialPanel({
     };
   }, [initType, initParams, initColor]);
 
-  const vals = useDialKit('Curvehaus', config, {
+  const vals = useDialKit('Curvehaus Editor', config, {
     onAction: (action: string) => {
-      const styl = vals.Style as { strokeColor: string; strokeWidth: number; ghostOpacity: number };
+      const styl = vals.Style as { strokeColor: string; ghostWidth: number; trimWidth: number; ghostOpacity: number };
       const anm = vals.Animation as { speed: number; trimLength: number };
       const pts = generatePoints(initType, curveParamsFromVals()).filter(p => isFinite(p[0]) && isFinite(p[1]));
-      const opts = { color: styl.strokeColor, lineWidth: styl.strokeWidth, ghostOpacity: styl.ghostOpacity, speed: anm.speed, trimLength: anm.trimLength, size: 48 };
+      const opts = { color: styl.strokeColor, lineWidth: styl.trimWidth, ghostOpacity: styl.ghostOpacity, speed: anm.speed, trimLength: anm.trimLength, size: 48 };
 
       if (action === 'Export.copyReact') copyText(exportReact(pts, opts));
       else if (action === 'Export.copyCSS') copyText(exportCSS(pts, opts));
@@ -219,7 +220,7 @@ function DialPanel({
   const selectedType = (vals.Curve as { curveType: string }).curveType as CurveType;
   const paramVals = vals.Parameters as Record<string, number>;
   const anim = vals.Animation as { speed: number; trimLength: number };
-  const style = vals.Style as { strokeColor: string; strokeWidth: number; particleSize: number; ghostOpacity: number; particles: number };
+  const style = vals.Style as { strokeColor: string; gradientColor: string; ghostWidth: number; trimWidth: number; ghostOpacity: number; gradientAngle: number };
 
   function curveParamsFromVals(): CurveParams {
     const cp: CurveParams = { a: 96, b: 60, c: 0.75, d: 2, n1: 0.3, n2: 1.7, n3: 1.7, m: 5, petals: 5, stepAngle: 71, customX: 'sin(3*t)*cos(t)', customY: 'sin(2*t)', customRange: 6.28 };
@@ -236,7 +237,7 @@ function DialPanel({
       for (const def of curveParamDefs[selectedType]) {
         if (def.param !== 'customX' && def.param !== 'customY') defaults[def.param] = def.range[0];
       }
-      onTypeChange(selectedType, style.strokeColor);
+      onTypeChange(selectedType, style.strokeColor || '#ffffff');
     }
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -247,10 +248,11 @@ function DialPanel({
       speed: anim.speed,
       trimLength: anim.trimLength,
       strokeColor: style.strokeColor,
-      strokeWidth: style.strokeWidth,
+      gradientColor: style.gradientColor,
+      ghostWidth: style.ghostWidth,
+      trimWidth: style.trimWidth,
       ghostOpacity: style.ghostOpacity,
-      particleSize: style.particleSize,
-      particleCount: Math.round(style.particles),
+      gradientAngle: style.gradientAngle,
     });
   }); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -269,15 +271,15 @@ function EditorInner() {
   const svgRef = useRef<SVGSVGElement>(null);
   const groupRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
-  const circleRefs = useRef<SVGCircleElement[]>([]);
+  const trimRef = useRef<SVGPathElement>(null);
   const searchParams = useSearchParams();
 
   const [state, setState] = useState<CurveState>({
     curveType: 'hypotrochoid',
     params: buildParams('hypotrochoid', { a: 96, b: 60, c: 0.75 }),
     speed: 0.5, trimLength: 0.38,
-    strokeColor: '#d42b4e', strokeWidth: 2.0, particleSize: 3.0,
-    ghostOpacity: 0.1, particleCount: 120,
+    strokeColor: '#d42b4e', ghostWidth: 2.0, trimWidth: 2.0,
+    ghostOpacity: 0.1, gradientColor: '#378ADD', gradientAngle: 0,
     customX: 'sin(3*t)*cos(t)', customY: 'sin(2*t)',
   });
   const [info, setInfo] = useState<CurveInfo>({ name: '', formula: '', detail: '' });
@@ -285,6 +287,7 @@ function EditorInner() {
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; });
   useEffect(() => { setInfo(getCurveInfo(state.curveType, state.params)); }, [state.curveType, state.params]);
+
 
   // Load preset from URL ?preset=N
   useEffect(() => {
@@ -303,9 +306,28 @@ function EditorInner() {
       e: { customX: String(preset.params[0]), customY: String(preset.params[1]), customRange: Number(preset.params[2] || 6.28) },
     };
     const mapped = paramMap[preset.type] || {};
-    setState(s => ({ ...s, curveType: type, params: buildParams(type, mapped), strokeColor: '#ffffff' }));
+    const color = '#' + (searchParams.get('color') || 'ffffff');
+    const gradColor = searchParams.get('grad') ? '#' + searchParams.get('grad') : color;
+    const angle = Number(searchParams.get('angle') || 0);
+    const gw = Number(searchParams.get('gw') || 2.0);
+    const tw = Number(searchParams.get('tw') || 2.0);
+    const tl = Number(searchParams.get('tl') || 0.38);
+    const sp = Number(searchParams.get('sp') || 0.5);
+    const go = Number(searchParams.get('go') || 0.1);
+    const builtParams = buildParams(type, mapped);
+    setState(s => ({
+      ...s, curveType: type, params: builtParams,
+      strokeColor: color, gradientColor: gradColor, gradientAngle: angle,
+      ghostWidth: gw, trimWidth: tw, trimLength: tl, speed: sp, ghostOpacity: go,
+    }));
+    // Update DialKit remount props with the PRESET's values
+    const defaults: Record<string, number> = {};
+    for (const [k, v] of Object.entries(mapped)) {
+      if (typeof v === 'number') defaults[k] = v;
+    }
     setActiveType(type);
-    setActiveColor('#ffffff');
+    setActiveDefaults(defaults);
+    setActiveColor(color);
     setDialKey(k => k + 1);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -345,76 +367,60 @@ function EditorInner() {
   const setCustomText = useCallback((v: string) => setState(s => ({ ...s, customX: v, params: { ...s.params, customX: v } })), []);
 
   // ═══════════════════════════════════════════════════════════════
-  // ANIMATION LOOP — moves circles along curve each frame
+  // ANIMATION LOOP — single stroke-dashoffset, no circles
   // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
-    const startTime = performance.now();
     let frameId: number;
 
     function tick(now: number) {
       const s = stateRef.current;
-      const pts = mappedRef.current;
-      const n = pts.length;
+      const trimEl = trimRef.current;
+      const ghostEl = pathRef.current;
+      if (!trimEl) { frameId = requestAnimationFrame(tick); return; }
 
-      if (n < 10) { frameId = requestAnimationFrame(tick); return; }
+      const totalLen = trimEl.getTotalLength();
+      if (totalLen < 1) { frameId = requestAnimationFrame(tick); return; }
 
-      // Progress: 0→1 over one loop
-      const durationMs = 4600 / (s.speed || 0.5);
-      const progress = (((now - startTime) % durationMs) / durationMs);
-      const trailSpan = s.trimLength || 0.38;
-      const sw = s.strokeWidth || 2.0;
-      const headR = s.particleSize || 3.0;
-      const tailR = headR * 0.25;
-      const count = s.particleCount || 120;
+      const trimLen = totalLen * (s.trimLength || 0.08);
+      const speed = s.speed || 0.5;
+      const progress = ((now / 1000) * speed * 0.30 * totalLen) % totalLen;
 
-      const pathEl = pathRef.current;
-      if (pathEl) {
-        pathEl.setAttribute('stroke-width', sw.toFixed(1));
-        pathEl.setAttribute('opacity', String(s.ghostOpacity || 0.1));
+      // Trim path — separate width, animated dash
+      trimEl.setAttribute('stroke-dasharray', `${trimLen} ${totalLen - trimLen}`);
+      trimEl.setAttribute('stroke-dashoffset', String(-((progress - trimLen + totalLen) % totalLen)));
+      trimEl.setAttribute('stroke-width', String(s.trimWidth || 2.0));
+
+      // Apply gradient or solid color to trim
+      const hasGradient = s.gradientColor && s.gradientColor !== s.strokeColor;
+      if (hasGradient) {
+        trimEl.setAttribute('stroke', 'url(#trim-gradient)');
+      } else {
+        trimEl.setAttribute('stroke', s.strokeColor || '#d42b4e');
       }
 
-      // Head walks forward continuously
-      const headIdx = Math.floor(progress * (n - 1));
-      const trailPoints = Math.floor(n * trailSpan);
-      const rawStep = Math.max(1, Math.floor(trailPoints / count));
-      const step = Math.min(rawStep, Math.ceil(n / 200));
+      // Ghost path — separate width + opacity
+      if (ghostEl) {
+        ghostEl.setAttribute('stroke-width', String(s.ghostWidth || 2.0));
+        ghostEl.setAttribute('opacity', String(s.ghostOpacity || 0.1));
+        ghostEl.setAttribute('stroke', s.strokeColor || '#d42b4e');
+      }
 
-      for (let i = 0; i < MAX_PARTICLES; i++) {
-        const el = circleRefs.current[i];
-        if (!el) continue;
-        if (i >= count) { el.setAttribute('opacity', '0'); continue; }
-
-        const tailOffset = i / (count - 1); // 0=head, 1=tail
-
-        // Walk backwards from head by i steps
-        const ptIdx = ((headIdx - i * step) % n + n) % n;
-        const pt = pts[ptIdx];
-
-        const fade = Math.pow(1 - tailOffset, 0.53);
-        const radius = headR - (headR - tailR) * Math.pow(tailOffset, 1.5);
-        const opacity = Math.max(0.04, fade);
-
-        el.setAttribute('cx', pt[0].toFixed(2));
-        el.setAttribute('cy', pt[1].toFixed(2));
-        el.setAttribute('r', radius.toFixed(2));
-        el.setAttribute('opacity', opacity.toFixed(3));
+      // Update gradient angle + colors
+      const gradEl = document.getElementById('trim-gradient') as unknown as SVGLinearGradientElement | null;
+      if (gradEl) {
+        gradEl.setAttribute('gradientTransform', `rotate(${(s.gradientAngle || 0) - 90} 0.5 0.5)`);
+        const stop0 = gradEl.querySelector('.stop0');
+        const stop1 = gradEl.querySelector('.stop1');
+        if (stop0) stop0.setAttribute('stop-color', s.strokeColor || '#d42b4e');
+        if (stop1) stop1.setAttribute('stop-color', s.gradientColor || '#378ADD');
       }
 
       frameId = requestAnimationFrame(tick);
     }
 
-    console.log('CURVEHAUS: animation started');
     frameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameId);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Log first circle data on mount for debugging
-  useEffect(() => {
-    if (mapped.length > 10) {
-      const headR = state.particleSize || 3.0;
-      console.log('Circle 0:', { cx: mapped[0][0].toFixed(2), cy: mapped[0][1].toFixed(2), r: headR.toFixed(2), opacity: '1.000' });
-    }
-  }, [mapped, state.strokeWidth]);
 
   return (
     <div className="flex h-screen flex-col items-center justify-center pr-[280px] max-[900px]:pr-0">
@@ -426,36 +432,41 @@ function EditorInner() {
         className="w-full flex-1"
         style={{ maxHeight: 'calc(100vh - 40px)', maxWidth: 'calc(100vw - 300px)' }}
       >
+        <defs>
+          <linearGradient id="trim-gradient" gradientUnits="objectBoundingBox"
+            gradientTransform={`rotate(${(state.gradientAngle || 0) - 90} 0.5 0.5)`}>
+            <stop className="stop0" offset="0%" stopColor={state.strokeColor} />
+            <stop className="stop1" offset="100%" stopColor={state.gradientColor || '#378ADD'} />
+          </linearGradient>
+        </defs>
         <g ref={groupRef}>
-          {/* Ghost path — STROKE only, never fill */}
+          {/* Ghost path — separate width */}
           <path
             ref={pathRef}
             d={pathD}
             stroke={state.strokeColor}
-            strokeWidth={state.strokeWidth}
+            strokeWidth={state.ghostWidth}
             strokeLinecap="round"
             strokeLinejoin="round"
             opacity={state.ghostOpacity}
             fill="none"
           />
-          {/* Trail circles */}
-          {Array.from({ length: MAX_PARTICLES }, (_, i) => (
-            <circle
-              key={i}
-              ref={el => { if (el) circleRefs.current[i] = el; }}
-              fill={state.strokeColor}
-              cx="50" cy="50"
-              r={String(state.particleSize || 3.0)}
-              opacity="1"
-            />
-          ))}
+          {/* Trim path — separate width, gradient stroke */}
+          <path
+            ref={trimRef}
+            d={pathD}
+            stroke={state.gradientColor !== state.strokeColor ? 'url(#trim-gradient)' : state.strokeColor}
+            strokeWidth={state.trimWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
         </g>
       </svg>
 
       {/* Compact info */}
       <div className="shrink-0 py-0.5 text-center">
         <span className="text-[13px] font-medium text-white/60">{info.name}</span>
-        <span className="ml-2 font-mono text-[9px] text-white/15">{info.formula}</span>
       </div>
 
       {/* Custom text input */}
@@ -473,6 +484,15 @@ function EditorInner() {
         initType={activeType}
         initParams={activeDefaults}
         initColor={activeColor}
+        initStyle={{
+          ghostWidth: state.ghostWidth,
+          trimWidth: state.trimWidth,
+          trimLength: state.trimLength,
+          speed: state.speed,
+          ghostOpacity: state.ghostOpacity,
+          gradientColor: state.gradientColor,
+          gradientAngle: state.gradientAngle,
+        }}
         onStateChange={handleStateChange}
         onTypeChange={handleTypeChange}
         svgRef={svgRef}
