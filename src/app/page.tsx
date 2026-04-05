@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SECTIONS, ALL_PRESETS } from '@/lib/presets';
 import { gen, norm, cumLen } from '@/lib/curves';
 import { exportReact } from '@/lib/exports';
@@ -25,17 +25,42 @@ export default function Gallery() {
   }, [activeId, mounted]);
   const activePreset = ALL_PRESETS.find(p => p.id === activeId) || ALL_PRESETS[0];
 
-  // Lifted color state — shared between Hero and copy button
-  // Reset when preset changes to prevent stale color flash
-  const [baseColor, setBaseColor] = useState('#ffffff');
-  const [gradientStops, setGradientStops] = useState<string[]>([]);
-  const [gradientAngle, setGradientAngle] = useState(0);
+  // Lifted color state — persists across editor round-trips
+  const [baseColor, setBaseColor] = useState(() => {
+    if (typeof window !== 'undefined') return sessionStorage.getItem('curvehaus-color') || '#ffffff';
+    return '#ffffff';
+  });
+  const [gradientStops, setGradientStops] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const s = sessionStorage.getItem('curvehaus-stops');
+      return s ? JSON.parse(s) : [];
+    }
+    return [];
+  });
+  const [gradientAngle, setGradientAngle] = useState(() => {
+    if (typeof window !== 'undefined') return Number(sessionStorage.getItem('curvehaus-angle') || 0);
+    return 0;
+  });
 
+  // Save color state
   useEffect(() => {
-    setBaseColor('#ffffff');
-    setGradientStops([]);
-    setGradientAngle(0);
-  }, [activeId]);
+    if (mounted) {
+      sessionStorage.setItem('curvehaus-color', baseColor);
+      sessionStorage.setItem('curvehaus-stops', JSON.stringify(gradientStops));
+      sessionStorage.setItem('curvehaus-angle', String(gradientAngle));
+    }
+  }, [baseColor, gradientStops, gradientAngle, mounted]);
+
+  // Reset colors only on explicit preset click, not on mount/restore
+  const prevIdRef = useRef(activeId);
+  useEffect(() => {
+    if (mounted && prevIdRef.current !== activeId) {
+      setBaseColor('#ffffff');
+      setGradientStops([]);
+      setGradientAngle(0);
+    }
+    prevIdRef.current = activeId;
+  }, [activeId, mounted]);
 
   const handleCopyReact = useCallback(() => {
     const raw = gen(activePreset.type, activePreset.params);
