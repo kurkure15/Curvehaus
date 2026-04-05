@@ -12,55 +12,46 @@ import BentoCell from '@/components/BentoCell';
 export default function Gallery() {
   const [activeId, setActiveId] = useState(1);
   const [mounted, setMounted] = useState(false);
-  // Read saved selection on mount
+
+  // Color state
+  const [baseColor, setBaseColor] = useState('#ffffff');
+  const [gradientStops, setGradientStops] = useState<string[]>([]);
+  const [gradientAngle, setGradientAngle] = useState(0);
+
+  // Restore ALL state from sessionStorage in one effect
   useEffect(() => {
-    const saved = sessionStorage.getItem('curvehaus-active');
-    if (saved) setActiveId(Number(saved));
+    const savedId = sessionStorage.getItem('curvehaus-active');
+    if (savedId) setActiveId(Number(savedId));
+    const c = sessionStorage.getItem('curvehaus-color');
+    if (c) setBaseColor(c);
+    const s = sessionStorage.getItem('curvehaus-stops');
+    if (s) try { setGradientStops(JSON.parse(s)); } catch {}
+    const a = sessionStorage.getItem('curvehaus-angle');
+    if (a) setGradientAngle(Number(a));
+    // Set mounted AFTER all restores so save effects don't fire with defaults
     setMounted(true);
   }, []);
 
-  // Save selection — but only after mount to prevent overwriting with default
+  // Save state — only after mount
   useEffect(() => {
-    if (mounted) sessionStorage.setItem('curvehaus-active', String(activeId));
-  }, [activeId, mounted]);
+    if (!mounted) return;
+    sessionStorage.setItem('curvehaus-active', String(activeId));
+    sessionStorage.setItem('curvehaus-color', baseColor);
+    sessionStorage.setItem('curvehaus-stops', JSON.stringify(gradientStops));
+    sessionStorage.setItem('curvehaus-angle', String(gradientAngle));
+  }, [activeId, baseColor, gradientStops, gradientAngle, mounted]);
+
   const activePreset = ALL_PRESETS.find(p => p.id === activeId) || ALL_PRESETS[0];
 
-  // Lifted color state — persists across editor round-trips
-  const [baseColor, setBaseColor] = useState(() => {
-    if (typeof window !== 'undefined') return sessionStorage.getItem('curvehaus-color') || '#ffffff';
-    return '#ffffff';
-  });
-  const [gradientStops, setGradientStops] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      const s = sessionStorage.getItem('curvehaus-stops');
-      return s ? JSON.parse(s) : [];
-    }
-    return [];
-  });
-  const [gradientAngle, setGradientAngle] = useState(() => {
-    if (typeof window !== 'undefined') return Number(sessionStorage.getItem('curvehaus-angle') || 0);
-    return 0;
-  });
-
-  // Save color state
-  useEffect(() => {
-    if (mounted) {
-      sessionStorage.setItem('curvehaus-color', baseColor);
-      sessionStorage.setItem('curvehaus-stops', JSON.stringify(gradientStops));
-      sessionStorage.setItem('curvehaus-angle', String(gradientAngle));
-    }
-  }, [baseColor, gradientStops, gradientAngle, mounted]);
-
-  // Reset colors only on explicit preset click, not on mount/restore
-  const prevIdRef = useRef(activeId);
-  useEffect(() => {
-    if (mounted && prevIdRef.current !== activeId) {
+  // Reset colors when user clicks a DIFFERENT preset (not on mount)
+  const handleSelectPreset = useCallback((id: number) => {
+    if (id !== activeId) {
       setBaseColor('#ffffff');
       setGradientStops([]);
       setGradientAngle(0);
     }
-    prevIdRef.current = activeId;
-  }, [activeId, mounted]);
+    setActiveId(id);
+  }, [activeId]);
 
   const handleCopyReact = useCallback(() => {
     const raw = gen(activePreset.type, activePreset.params);
@@ -156,7 +147,7 @@ export default function Gallery() {
                     key={preset.id}
                     preset={preset}
                     active={activeId === preset.id}
-                    onSelect={() => setActiveId(preset.id)}
+                    onSelect={() => handleSelectPreset(preset.id)}
                   />
                 ))}
               </div>

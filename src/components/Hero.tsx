@@ -88,6 +88,10 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
         <canvas ref={canvasRef} style={{ width: 200, height: 200 }} className="block" />
         {/* Edit button — navigates to /editor with ALL current settings */}
         <button onClick={() => {
+          // Stop animation and clear canvas immediately to prevent flash
+          cancelAnimationFrame(animRef.current);
+          const cvs = canvasRef.current;
+          if (cvs) { const ctx = cvs.getContext('2d'); if (ctx) ctx.clearRect(0, 0, cvs.width, cvs.height); }
           const p = new URLSearchParams();
           p.set('preset', String(preset.id));
           p.set('color', baseColor.replace('#', ''));

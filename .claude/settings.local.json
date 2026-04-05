@@ -36,7 +36,8 @@
       "Bash(git commit -m 'remove black bg from favicon:*)",
       "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/changelog)",
       "Bash(git commit -m 'update favicon to orange:*)",
-      "Bash(git commit -m 'persist color state across editor round-trips:*)"
+      "Bash(git commit -m 'persist color state across editor round-trips:*)",
+      "Bash(git commit -m 'fix: color persists across editor navigation:*)"
     ]
   }
 }
