@@ -47,10 +47,9 @@ export const SECTIONS = [
   {
     title: 'SPECIAL',
     presets: [
-      { id: 21, name: 'Lemniscate', type: 'e' as CurveType, params: ['cos(t)/(1+sin(t)*sin(t))', 'sin(t)*cos(t)/(1+sin(t)*sin(t))', 6.28] },
-      { id: 22, name: 'Cardioid', type: 'e' as CurveType, params: ['(1+cos(t))*cos(t)', '(1+cos(t))*sin(t)', 6.28] },
-      { id: 23, name: 'Epicycloid', type: 'e' as CurveType, params: ['4*cos(t)-cos(4*t)', '4*sin(t)-sin(4*t)', 6.28] },
-      { id: 24, name: 'Astroid', type: 'e' as CurveType, params: ['pow(cos(t),3)', 'pow(sin(t),3)', 6.28] },
+      { id: 21, name: 'Cardioid', type: 'r' as CurveType, params: [1, 1.0] },
+      { id: 22, name: 'Astroid', type: 'h' as CurveType, params: [48, 12, 1.0] },
+      { id: 23, name: 'Deltoid', type: 'h' as CurveType, params: [48, 16, 1.0] },
     ],
   },
 ];

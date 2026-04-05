@@ -10,23 +10,32 @@ import Hero from '@/components/Hero';
 import BentoCell from '@/components/BentoCell';
 
 export default function Gallery() {
-  const [activeId, setActiveId] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('curvehaus-active');
-      if (saved) return Number(saved);
-    }
-    return 1;
-  });
-
+  const [activeId, setActiveId] = useState(1);
+  const [mounted, setMounted] = useState(false);
+  // Read saved selection on mount
   useEffect(() => {
-    sessionStorage.setItem('curvehaus-active', String(activeId));
-  }, [activeId]);
+    const saved = sessionStorage.getItem('curvehaus-active');
+    if (saved) setActiveId(Number(saved));
+    setMounted(true);
+  }, []);
+
+  // Save selection — but only after mount to prevent overwriting with default
+  useEffect(() => {
+    if (mounted) sessionStorage.setItem('curvehaus-active', String(activeId));
+  }, [activeId, mounted]);
   const activePreset = ALL_PRESETS.find(p => p.id === activeId) || ALL_PRESETS[0];
 
   // Lifted color state — shared between Hero and copy button
+  // Reset when preset changes to prevent stale color flash
   const [baseColor, setBaseColor] = useState('#ffffff');
   const [gradientStops, setGradientStops] = useState<string[]>([]);
   const [gradientAngle, setGradientAngle] = useState(0);
+
+  useEffect(() => {
+    setBaseColor('#ffffff');
+    setGradientStops([]);
+    setGradientAngle(0);
+  }, [activeId]);
 
   const handleCopyReact = useCallback(() => {
     const raw = gen(activePreset.type, activePreset.params);
@@ -64,9 +73,14 @@ export default function Gallery() {
     <div className="flex h-screen flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Nav */}
       <nav className="flex shrink-0 items-center justify-between px-6 py-3">
-        <span className="text-[14px] font-semibold tracking-[-0.01em]" style={{ color: 'var(--text)' }}>Curvehaus</span>
+        <div className="flex flex-col gap-1">
+          <span className="text-[16px] font-bold tracking-[-0.01em]" style={{ color: 'var(--text)' }}>Curvehaus <a href="/changelog" className="text-[10px] font-normal hover:text-[#a1a1aa]" style={{ color: 'var(--text-3)' }}>v1</a></span>
+          <span className="text-[12px] font-normal" style={{ color: 'var(--text-3)' }}>
+            Made by <a href="https://ankuryadav.me" target="_blank" rel="noopener noreferrer" className="hover:text-[#a1a1aa]">Ankur</a> with Claude
+          </span>
+        </div>
         <a href="https://github.com/kurkure15/Curvehaus" target="_blank" rel="noopener noreferrer"
-          className="text-[12px] hover:underline" style={{ color: 'var(--text-2)' }}>
+          className="self-center text-[12px] hover:underline" style={{ color: 'var(--text-2)' }}>
           GitHub ↗
         </a>
       </nav>

@@ -27,14 +27,12 @@ interface CurveState {
   ghostOpacity: number;
   gradientColor: string;
   gradientAngle: number;
-  customX: string;
-  customY: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════
 
 function buildParams(type: CurveType, overrides: Partial<CurveParams> = {}): CurveParams {
-  const cp: CurveParams = { a: 96, b: 60, c: 0.75, d: 2, n1: 0.3, n2: 1.7, n3: 1.7, m: 5, petals: 5, stepAngle: 71, customX: 'sin(3*t)*cos(t)', customY: 'sin(2*t)', customRange: 6.28 };
+  const cp: CurveParams = { a: 96, b: 60, c: 0.75, d: 2, n1: 0.3, n2: 1.7, n3: 1.7, m: 5, petals: 5, stepAngle: 71 };
   for (const def of curveParamDefs[type]) {
     if (typeof cp[def.param] === 'number') (cp as unknown as Record<string, number>)[def.param] = def.range[0];
   }
@@ -172,7 +170,6 @@ function DialPanel({
   const config = useMemo(() => {
     const paramSliders: Record<string, [number, number, number, number]> = {};
     for (const def of curveParamDefs[initType]) {
-      if (def.param === 'customX' || def.param === 'customY') continue;
       paramSliders[def.label] = [initParams[def.param] ?? def.range[0], def.range[1], def.range[2], def.range[3]];
     }
     return {
@@ -199,10 +196,10 @@ function DialPanel({
 
   const vals = useDialKit('Curvehaus Editor', config, {
     onAction: (action: string) => {
-      const styl = vals.Style as { strokeColor: string; ghostWidth: number; trimWidth: number; ghostOpacity: number };
+      const styl = vals.Style as { strokeColor: string; gradientColor: string; ghostWidth: number; trimWidth: number; ghostOpacity: number };
       const anm = vals.Animation as { speed: number; trimLength: number };
       const pts = generatePoints(initType, curveParamsFromVals()).filter(p => isFinite(p[0]) && isFinite(p[1]));
-      const opts = { color: styl.strokeColor, lineWidth: 5.5, ghostOpacity: 0.06, speed: anm.speed, trimLength: 0.08, size: 48, gradientColor: style.gradientColor, gradientAngle: style.gradientAngle };
+      const opts = { color: styl.strokeColor, lineWidth: 5.5, ghostOpacity: 0.06, speed: anm.speed, trimLength: 0.08, size: 48, gradientColor: styl.gradientColor, gradientAngle: style.gradientAngle };
 
       if (action === 'Export.copyReact') { copyText(exportReact(pts, opts)); toast('React component copied'); }
       else if (action === 'Export.exportGIF') {
@@ -222,9 +219,8 @@ function DialPanel({
   const style = vals.Style as { strokeColor: string; gradientColor: string; ghostWidth: number; trimWidth: number; ghostOpacity: number; gradientAngle: number };
 
   function curveParamsFromVals(): CurveParams {
-    const cp: CurveParams = { a: 96, b: 60, c: 0.75, d: 2, n1: 0.3, n2: 1.7, n3: 1.7, m: 5, petals: 5, stepAngle: 71, customX: 'sin(3*t)*cos(t)', customY: 'sin(2*t)', customRange: 6.28 };
+    const cp: CurveParams = { a: 96, b: 60, c: 0.75, d: 2, n1: 0.3, n2: 1.7, n3: 1.7, m: 5, petals: 5, stepAngle: 71 };
     for (const def of curveParamDefs[initType]) {
-      if (def.param === 'customX' || def.param === 'customY') continue;
       if (paramVals[def.label] !== undefined) (cp as unknown as Record<string, number>)[def.param] = paramVals[def.label];
     }
     return cp;
@@ -234,7 +230,7 @@ function DialPanel({
     if (selectedType !== initType) {
       const defaults: Record<string, number> = {};
       for (const def of curveParamDefs[selectedType]) {
-        if (def.param !== 'customX' && def.param !== 'customY') defaults[def.param] = def.range[0];
+        defaults[def.param] = def.range[0];
       }
       onTypeChange(selectedType, style.strokeColor || '#ffffff');
     }
@@ -279,7 +275,6 @@ function EditorInner() {
     speed: 0.5, trimLength: 0.38,
     strokeColor: '#d42b4e', ghostWidth: 2.0, trimWidth: 2.0,
     ghostOpacity: 0.1, gradientColor: '#378ADD', gradientAngle: 0,
-    customX: 'sin(3*t)*cos(t)', customY: 'sin(2*t)',
   });
   const [info, setInfo] = useState<CurveInfo>({ name: '', formula: '', detail: '' });
 
@@ -294,7 +289,7 @@ function EditorInner() {
     if (!pid) return;
     const preset = ALL_PRESETS.find(p => p.id === Number(pid));
     if (!preset) return;
-    const typeMap: Record<string, string> = { h: 'hypotrochoid', r: 'rose', l: 'lissajous', s: 'superformula', e: 'custom' };
+    const typeMap: Record<string, string> = { h: 'hypotrochoid', r: 'rose', l: 'lissajous', s: 'superformula' };
     const type = (typeMap[preset.type] || 'hypotrochoid') as CurveType;
     // Map array params to named params
     const paramMap: Record<string, Partial<CurveParams>> = {
@@ -302,7 +297,6 @@ function EditorInner() {
       r: { petals: Number(preset.params[0]), a: Number(preset.params[1] || 0) },
       l: { b: Number(preset.params[0]), d: Number(preset.params[1]), c: Number(preset.params[2] || 0) },
       s: { m: Number(preset.params[0]), n1: Number(preset.params[1]), n2: Number(preset.params[2]) },
-      e: { customX: String(preset.params[0]), customY: String(preset.params[1]), customRange: Number(preset.params[2] || 6.28) },
     };
     const mapped = paramMap[preset.type] || {};
     const color = '#' + (searchParams.get('color') || 'ffffff');
@@ -350,7 +344,7 @@ function EditorInner() {
   const handleTypeChange = useCallback((type: CurveType, color: string) => {
     const defaults: Record<string, number> = {};
     for (const def of curveParamDefs[type]) {
-      if (def.param !== 'customX' && def.param !== 'customY') defaults[def.param] = def.range[0];
+      defaults[def.param] = def.range[0];
     }
     setState(s => ({ ...s, curveType: type, params: buildParams(type), strokeColor: color }));
     setActiveType(type);
@@ -363,7 +357,6 @@ function EditorInner() {
     setState(s => ({ ...s, ...partial }));
   }, []);
 
-  const setCustomText = useCallback((v: string) => setState(s => ({ ...s, customX: v, params: { ...s.params, customX: v } })), []);
 
   // ═══════════════════════════════════════════════════════════════
   // ANIMATION LOOP — single stroke-dashoffset, no circles
@@ -440,7 +433,7 @@ function EditorInner() {
           <linearGradient id="trim-gradient" gradientUnits="objectBoundingBox"
             gradientTransform={`rotate(${(state.gradientAngle || 0) - 90} 0.5 0.5)`}>
             <stop className="stop0" offset="0%" stopColor={state.strokeColor} />
-            <stop className="stop1" offset="100%" stopColor={state.gradientColor || '#378ADD'} />
+            <stop className="stop1" offset="100%" stopColor={state.gradientColor || state.strokeColor} />
           </linearGradient>
         </defs>
         <g ref={groupRef}>
@@ -472,16 +465,6 @@ function EditorInner() {
       <div className="shrink-0 py-0.5 text-center">
         <span className="text-[13px] font-medium text-white/60">{info.name}</span>
       </div>
-
-      {/* Custom text input */}
-      {state.curveType === 'custom' && (
-        <div className="fixed bottom-4 left-4 z-50 rounded-lg border border-[#1e1e24] bg-[#111114] p-3">
-          <label className="mb-1 block text-[10px] text-white/40">Type any word</label>
-          <input type="text" value={state.customX} onChange={e => setCustomText(e.target.value)}
-            placeholder="hello"
-            className="w-56 rounded border border-[#1e1e24] bg-white/[0.04] px-3 py-1.5 text-[16px] text-white/80 outline-none focus:border-white/20" />
-        </div>
-      )}
 
       <DialPanel
         key={dialKey}

@@ -44,6 +44,15 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
     return { pts, L };
   }, [preset]);
 
+  // Clear canvas immediately on preset change to prevent stale frame flash
+  useEffect(() => {
+    const cvs = canvasRef.current;
+    if (cvs) {
+      const ctx = cvs.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, cvs.width, cvs.height);
+    }
+  }, [preset]);
+
   // Animation loop
   useEffect(() => {
     const start = performance.now();
