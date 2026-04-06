@@ -17,7 +17,7 @@ function rgbToHex(r: number, g: number, b: number) {
   return '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
 }
 
-export default function ColorPickerSheet({ onAdd, onClose, onDragY }: { onAdd: (hex: string) => void; onClose: () => void; onDragY?: (y: number) => void }) {
+export default function ColorPickerSheet({ onAdd, onClose, onDragY, addLabel = 'Add stop' }: { onAdd: (hex: string) => void; onClose: () => void; onDragY?: (y: number) => void; addLabel?: string }) {
   const [hue, setHue] = useState(0);
   const [sat, setSat] = useState(0.8);
   const [val, setVal] = useState(0.9);
@@ -169,7 +169,7 @@ export default function ColorPickerSheet({ onAdd, onClose, onDragY }: { onAdd: (
             onClick={() => onAdd(hex)}
             className="rounded-lg px-4 text-[12px] font-medium"
             style={{ height: 44, background: 'var(--text)', color: 'var(--bg)', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-            Add stop
+            {addLabel}
           </button>
         </div>
       </div>

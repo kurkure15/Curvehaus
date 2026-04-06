@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useDialKit } from 'dialkit';
+import { useDialKit, DialRoot } from 'dialkit';
 import {
   generatePoints, getCurveInfo, curveParamDefs,
   CURVE_TYPES, CurveType, CurveParams, CurveInfo,
@@ -152,6 +152,65 @@ async function exportMP4(svgEl: SVGSVGElement, durationMs: number) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Mobile DialKit bottom sheet with drag-to-dismiss
+// ═══════════════════════════════════════════════════════════════════
+
+function MobileDialSheet({ onClose }: { onClose: () => void }) {
+  const [translateY, setTranslateY] = useState(0);
+  const dragStart = useRef<number | null>(null);
+  const sheetHeight = useRef(0);
+  const sheetEl = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (sheetEl.current) sheetHeight.current = sheetEl.current.offsetHeight;
+  }, []);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    dragStart.current = e.touches[0].clientY;
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragStart.current === null) return;
+    const dy = e.touches[0].clientY - dragStart.current;
+    if (dy > 0) setTranslateY(dy);
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (translateY > 80) {
+      setTranslateY(500);
+      setTimeout(onClose, 250);
+    } else {
+      setTranslateY(0);
+    }
+    dragStart.current = null;
+  }, [translateY, onClose]);
+
+  return (
+    <div ref={sheetEl}
+      className="fixed bottom-0 z-40 rounded-t-2xl border-t border-[#27272a] bg-[#111113] md:hidden"
+      style={{
+        left: 24, right: 24,
+        maxHeight: '55vh',
+        overflow: 'visible',
+        paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+        boxShadow: '0 -8px 30px rgba(0,0,0,0.3)',
+        transform: `translateY(${translateY}px)`,
+        transition: dragStart.current !== null ? 'none' : 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
+        animation: translateY === 0 ? 'pickerSlideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) both' : undefined,
+      }}>
+      {/* Drag handle */}
+      <div className="flex justify-center py-3 touch-none cursor-grab"
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <div className="h-1 w-8 rounded-full bg-[#3f3f46]" />
+      </div>
+      <div style={{ maxHeight: 'calc(55vh - 44px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <DialRoot mode="inline" />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // DialKit panel
 // ═══════════════════════════════════════════════════════════════════
 
@@ -236,6 +295,7 @@ function DialPanel({
     }
   }, [selectedType]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const valsKey = JSON.stringify([paramVals, anim, style]);
   useEffect(() => {
     onStateChange({
       curveType: initType,
@@ -249,7 +309,7 @@ function DialPanel({
       ghostOpacity: style.ghostOpacity,
       gradientAngle: style.gradientAngle,
     });
-  }); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [valsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
 }
@@ -272,9 +332,9 @@ function EditorInner() {
   const [state, setState] = useState<CurveState>({
     curveType: 'hypotrochoid',
     params: buildParams('hypotrochoid', { a: 96, b: 60, c: 0.75 }),
-    speed: 0.5, trimLength: 0.38,
+    speed: 0.1, trimLength: 0.08,
     strokeColor: '#d42b4e', ghostWidth: 2.0, trimWidth: 2.0,
-    ghostOpacity: 0.1, gradientColor: '#378ADD', gradientAngle: 0,
+    ghostOpacity: 0.06, gradientColor: '#378ADD', gradientAngle: 0,
   });
   const [info, setInfo] = useState<CurveInfo>({ name: '', formula: '', detail: '' });
 
@@ -304,9 +364,9 @@ function EditorInner() {
     const angle = Number(searchParams.get('angle') || 0);
     const gw = Number(searchParams.get('gw') || 2.0);
     const tw = Number(searchParams.get('tw') || 2.0);
-    const tl = Number(searchParams.get('tl') || 0.38);
-    const sp = Number(searchParams.get('sp') || 0.5);
-    const go = Number(searchParams.get('go') || 0.1);
+    const tl = Number(searchParams.get('tl') || 0.08);
+    const sp = Number(searchParams.get('sp') || 0.1);
+    const go = Number(searchParams.get('go') || 0.06);
     const builtParams = buildParams(type, mapped);
     setState(s => ({
       ...s, curveType: type, params: builtParams,
@@ -340,6 +400,19 @@ function EditorInner() {
   const [activeType, setActiveType] = useState<CurveType>('hypotrochoid');
   const [activeDefaults, setActiveDefaults] = useState<Record<string, number>>({ a: 96, b: 60, c: 0.75 });
   const [activeColor, setActiveColor] = useState('#d42b4e');
+  const [dialOpen, setDialOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    setIsDesktop(mq.matches);
+    setDialOpen(!mq.matches);
+    setMounted(true);
+    const h = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', h);
+    return () => mq.removeEventListener('change', h);
+  }, []);
 
   const handleTypeChange = useCallback((type: CurveType, color: string) => {
     const defaults: Record<string, number> = {};
@@ -359,7 +432,7 @@ function EditorInner() {
 
 
   // ═══════════════════════════════════════════════════════════════
-  // ANIMATION LOOP — single stroke-dashoffset, no circles
+  // ANIMATION LOOP — direct point-range trim (same as home page)
   // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
     let frameId: number;
@@ -368,18 +441,39 @@ function EditorInner() {
       const s = stateRef.current;
       const trimEl = trimRef.current;
       const ghostEl = pathRef.current;
-      if (!trimEl) { frameId = requestAnimationFrame(tick); return; }
+      const pts = mappedRef.current;
+      if (!trimEl || pts.length < 10) { frameId = requestAnimationFrame(tick); return; }
 
-      const totalLen = trimEl.getTotalLength();
-      if (totalLen < 1) { frameId = requestAnimationFrame(tick); return; }
+      const n = pts.length;
+      const trimFrac = s.trimLength || 0.08;
+      const speed = s.speed || 0.1;
 
-      const trimLen = totalLen * (s.trimLength || 0.08);
-      const speed = s.speed || 0.5;
-      const progress = ((now / 1000) * speed * 0.30 * totalLen) % totalLen;
+      // Head/tail as fraction — same formula as renderer.ts drawTrim
+      const headFrac = ((now / 1000 * speed * 0.30) % 1 + 1) % 1;
+      const tailFrac = ((headFrac - trimFrac) % 1 + 1) % 1;
+      const headIdx = Math.floor(headFrac * (n - 1));
+      const tailIdx = Math.floor(tailFrac * (n - 1));
 
-      // Trim path — separate width, animated dash
-      trimEl.setAttribute('stroke-dasharray', `${trimLen} ${totalLen - trimLen}`);
-      trimEl.setAttribute('stroke-dashoffset', String(-((progress - trimLen + totalLen) % totalLen)));
+      // Build trim path D from point range
+      let trimD = '';
+      if (tailIdx <= headIdx) {
+        trimD = `M${pts[tailIdx][0].toFixed(2)},${pts[tailIdx][1].toFixed(2)}`;
+        for (let i = tailIdx + 1; i <= headIdx; i++) {
+          trimD += `L${pts[i][0].toFixed(2)},${pts[i][1].toFixed(2)}`;
+        }
+      } else {
+        trimD = `M${pts[tailIdx][0].toFixed(2)},${pts[tailIdx][1].toFixed(2)}`;
+        for (let i = tailIdx + 1; i < n; i++) {
+          trimD += `L${pts[i][0].toFixed(2)},${pts[i][1].toFixed(2)}`;
+        }
+        for (let i = 0; i <= headIdx; i++) {
+          trimD += `L${pts[i][0].toFixed(2)},${pts[i][1].toFixed(2)}`;
+        }
+      }
+
+      trimEl.setAttribute('d', trimD);
+      trimEl.removeAttribute('stroke-dasharray');
+      trimEl.removeAttribute('stroke-dashoffset');
       trimEl.setAttribute('stroke-width', String(s.trimWidth || 2.0));
 
       // Apply gradient or solid color to trim
@@ -393,7 +487,7 @@ function EditorInner() {
       // Ghost path — separate width + opacity
       if (ghostEl) {
         ghostEl.setAttribute('stroke-width', String(s.ghostWidth || 2.0));
-        ghostEl.setAttribute('opacity', String(s.ghostOpacity || 0.1));
+        ghostEl.setAttribute('opacity', String(s.ghostOpacity || 0.06));
         ghostEl.setAttribute('stroke', s.strokeColor || '#d42b4e');
       }
 
@@ -415,20 +509,17 @@ function EditorInner() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center pr-[280px] max-[900px]:pr-0">
+    <div className={`flex h-[100dvh] flex-col items-center md:pr-[280px] max-[900px]:md:pr-0 ${isDesktop ? 'justify-center' : ''}`}>
       {/* Back button */}
       <a href="/" className="fixed left-4 top-4 z-50 flex h-8 items-center gap-1.5 rounded-lg border border-[#27272a] bg-[#111113] px-3 text-[11px] text-[#a1a1aa] transition-colors hover:border-[#3f3f46] hover:text-white">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M19 12H5M5 12l6-6M5 12l6 6" /></svg>
         Back
       </a>
-      {/* SVG with <g> wrapping path + circles */}
-      <svg
-        ref={svgRef}
-        viewBox="0 0 100 100"
-        fill="none"
+
+      {/* SVG — responsive sizing, shrinks when sheet is open on mobile */}
+      <svg ref={svgRef} viewBox="0 0 100 100" fill="none"
         className="w-full flex-1"
-        style={{ maxHeight: 'calc(100vh - 40px)', maxWidth: 'calc(100vw - 300px)' }}
-      >
+        style={{ maxWidth: isDesktop ? undefined : 'min(90vw, 360px)', maxHeight: dialOpen && !isDesktop ? '45dvh' : 'calc(100dvh - 80px)', transition: 'max-height 0.3s ease' }}>
         <defs>
           <linearGradient id="trim-gradient" gradientUnits="objectBoundingBox"
             gradientTransform={`rotate(${(state.gradientAngle || 0) - 90} 0.5 0.5)`}>
@@ -437,53 +528,55 @@ function EditorInner() {
           </linearGradient>
         </defs>
         <g ref={groupRef}>
-          {/* Ghost path — separate width */}
-          <path
-            ref={pathRef}
-            d={pathD}
-            stroke={state.strokeColor}
-            strokeWidth={state.ghostWidth}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity={state.ghostOpacity}
-            fill="none"
-          />
-          {/* Trim path — separate width, gradient stroke */}
-          <path
-            ref={trimRef}
-            d={pathD}
+          <path ref={pathRef} d={pathD} stroke={state.strokeColor} strokeWidth={state.ghostWidth}
+            strokeLinecap="round" strokeLinejoin="round" opacity={state.ghostOpacity} fill="none" />
+          <path ref={trimRef} d={pathD}
             stroke={state.gradientColor !== state.strokeColor ? 'url(#trim-gradient)' : state.strokeColor}
-            strokeWidth={state.trimWidth}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
+            strokeWidth={state.trimWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
       </svg>
 
-      {/* Compact info */}
-      <div className="shrink-0 py-0.5 text-center">
-        <span className="text-[13px] font-medium text-white/60">{info.name}</span>
-      </div>
 
+      {/* DialPanel feeds data to DialKit */}
       <DialPanel
         key={dialKey}
         initType={activeType}
         initParams={activeDefaults}
         initColor={activeColor}
         initStyle={{
-          ghostWidth: state.ghostWidth,
-          trimWidth: state.trimWidth,
-          trimLength: state.trimLength,
-          speed: state.speed,
-          ghostOpacity: state.ghostOpacity,
-          gradientColor: state.gradientColor,
+          ghostWidth: state.ghostWidth, trimWidth: state.trimWidth,
+          trimLength: state.trimLength, speed: state.speed,
+          ghostOpacity: state.ghostOpacity, gradientColor: state.gradientColor,
           gradientAngle: state.gradientAngle,
         }}
         onStateChange={handleStateChange}
         onTypeChange={handleTypeChange}
         svgRef={svgRef}
       />
+
+      {/* Mobile: label + FAB aligned at bottom */}
+      {!dialOpen && (
+        <>
+        <span className="fixed left-0 right-0 z-40 text-center text-[13px] font-medium text-white/60 pointer-events-none md:hidden" style={{ bottom: 'calc(1rem + 10px)' }}>{info.name}</span>
+        <button type="button"
+          onTouchEnd={(e) => { e.preventDefault(); setDialOpen(true); }}
+          onClick={() => setDialOpen(true)}
+          className="fixed right-4 bottom-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-[#27272a] bg-[#111113] md:hidden"
+          style={{ WebkitTapHighlightColor: 'transparent' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
+            <path d="M1 14h6M9 8h6M17 16h6" />
+          </svg>
+        </button>
+        </>
+      )}
+
+      {dialOpen && (
+        <MobileDialSheet onClose={() => setDialOpen(false)} />
+      )}
+
+      {/* Desktop: floating DialKit panel (conditional — DialKit portals to body) */}
+      {mounted && isDesktop && <DialRoot position="top-right" />}
     </div>
   );
 }
