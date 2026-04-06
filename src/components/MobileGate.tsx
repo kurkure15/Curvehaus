@@ -1,27 +1,30 @@
 'use client';
 
-export default function MobileGate({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {/* Desktop: show app */}
-      <div className="hidden md:contents">{children}</div>
+import { useState, useEffect } from 'react';
 
-      {/* Mobile: show message */}
-      <div className="flex h-[100dvh] flex-col items-center justify-center gap-4 px-8 text-center md:hidden" style={{ background: '#09090b' }}>
-        <svg viewBox="0 0 100 100" fill="none" width={80} height={80}>
-          <path d="M50 15 C60 15, 85 30, 85 50 C85 70, 60 85, 50 85 C40 85, 15 70, 15 50 C15 30, 40 15, 50 15Z"
-            stroke="#f97316" strokeWidth="5.5" strokeLinecap="round" opacity="0.12" />
-          <path d="M50 15 C60 15, 85 30, 85 50"
-            stroke="#f97316" strokeWidth="6" strokeLinecap="round" />
-        </svg>
-        <h1 className="text-[18px] font-bold" style={{ color: '#fafafa' }}>Curvehaus</h1>
-        <p className="text-[14px] leading-relaxed" style={{ color: '#a1a1aa' }}>
-          Best experienced on desktop.
-        </p>
-        <p className="text-[12px]" style={{ color: '#52525b' }}>
-          Open on a wider screen to explore the full gallery and editor.
-        </p>
+export default function MobileGate({ children }: { children: React.ReactNode }) {
+  const [isMobile, setIsMobile] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    const mobile = window.innerWidth < 768;
+    const isDev = process.env.NODE_ENV === 'development';
+    setIsMobile(mobile && !isDev);
+    setChecked(true);
+  }, []);
+
+  if (!checked) return null;
+
+  if (isMobile) {
+    return (
+      <div className="flex h-[100dvh] flex-col items-center justify-center px-8 text-center" style={{ background: 'var(--bg)' }}>
+        <span className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>Curvehaus</span>
+        <span className="mt-2 text-[13px]" style={{ color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>
+          Mobile version coming soon.<br />Open on desktop for now.
+        </span>
       </div>
-    </>
-  );
+    );
+  }
+
+  return <>{children}</>;
 }

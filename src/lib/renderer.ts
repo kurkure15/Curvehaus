@@ -75,37 +75,22 @@ export function drawTrim(
 
   const lw = 0.055 * sz;
   const trimFrac = 0.08;
+  const n = pts.length;
 
-  // Convert to pixel space ONCE, compute pixel arc length
-  const pxX = new Float64Array(pts.length);
-  const pxY = new Float64Array(pts.length);
-  for (let i = 0; i < pts.length; i++) {
-    pxX[i] = pts[i][0] * sz;
-    pxY[i] = pts[i][1] * sz;
-  }
-  let pixLen = 0;
-  for (let i = 1; i < pts.length; i++) {
-    pixLen += Math.hypot(pxX[i] - pxX[i - 1], pxY[i] - pxY[i - 1]);
-  }
-  if (pixLen < 1) return;
+  // Head position as fraction (0→1)
+  const headFrac = ((time * speed * 0.30) % 1 + 1) % 1;
+  const tailFrac = ((headFrac - trimFrac) % 1 + 1) % 1;
 
-  const trimLen = trimFrac * pixLen;
-  const totalArcLen = L[L.length - 1] || 1;
-  // Trim position driven ONLY by time + speed — knob does NOT move the trim
-  const headDist = ((time * speed * totalArcLen * 0.30)) % totalArcLen;
-  const tailDist = ((headDist - totalArcLen * trimFrac) % totalArcLen + totalArcLen) % totalArcLen;
-  const tailPos = ((headDist * pixLen / totalArcLen - trimLen) % pixLen + pixLen) % pixLen;
+  const headIdx = Math.floor(headFrac * (n - 1));
+  const tailIdx = Math.floor(tailFrac * (n - 1));
 
-  // Build colors array
+  // Build strokeStyle
   const allColors = [baseColor, ...gradientStops];
-
-  // Build strokeStyle: solid color or linear gradient
   let style: string | CanvasGradient;
   if (gradientStops.length === 0) {
     const rgb = hexToRgb(baseColor);
     style = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
   } else {
-    // Gradient direction controlled by angle knob — rotates around canvas center
     const rad = (gradientAngle - 90) * Math.PI / 180;
     const cx = sz / 2, cy = sz / 2, len = sz * 0.5;
     const grad = ctx.createLinearGradient(
@@ -118,19 +103,28 @@ export function drawTrim(
     style = grad;
   }
 
-  // ONE path, ONE stroke — zero breaks
+  // Draw ONLY the trim segment — direct point range, no setLineDash
   ctx.beginPath();
-  ctx.moveTo(pxX[0], pxY[0]);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pxX[i], pxY[i]);
-
   ctx.lineWidth = lw;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.setLineDash([trimLen, pixLen - trimLen]);
-  ctx.lineDashOffset = -(tailPos % pixLen);
   ctx.strokeStyle = style;
+
+  if (tailIdx <= headIdx) {
+    ctx.moveTo(pts[tailIdx][0] * sz, pts[tailIdx][1] * sz);
+    for (let i = tailIdx + 1; i <= headIdx; i++) {
+      ctx.lineTo(pts[i][0] * sz, pts[i][1] * sz);
+    }
+  } else {
+    ctx.moveTo(pts[tailIdx][0] * sz, pts[tailIdx][1] * sz);
+    for (let i = tailIdx + 1; i < n; i++) {
+      ctx.lineTo(pts[i][0] * sz, pts[i][1] * sz);
+    }
+    for (let i = 0; i <= headIdx; i++) {
+      ctx.lineTo(pts[i][0] * sz, pts[i][1] * sz);
+    }
+  }
   ctx.stroke();
-  ctx.setLineDash([]);
 }
 
 // ── Full render (ghost + trim) ──────────────────────────────────────
