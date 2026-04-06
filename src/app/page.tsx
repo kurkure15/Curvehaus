@@ -51,8 +51,8 @@ export default function Gallery() {
 
   const activePreset = ALL_PRESETS.find(p => p.id === activeId) || ALL_PRESETS[0];
   const activeIdx = ALL_PRESETS.findIndex(p => p.id === activeId);
-  const prevPreset = activeIdx > 0 ? ALL_PRESETS[activeIdx - 1] : null;
-  const nextPreset = activeIdx < ALL_PRESETS.length - 1 ? ALL_PRESETS[activeIdx + 1] : null;
+  const prevPreset = ALL_PRESETS[(activeIdx - 1 + ALL_PRESETS.length) % ALL_PRESETS.length];
+  const nextPreset = ALL_PRESETS[(activeIdx + 1) % ALL_PRESETS.length];
 
   const handleSelectPreset = useCallback((id: number) => {
     setActiveId(id);
@@ -67,8 +67,8 @@ export default function Gallery() {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 40) {
       const idx = ALL_PRESETS.findIndex(p => p.id === activeId);
-      if (dx < 0 && idx < ALL_PRESETS.length - 1) handleSelectPreset(ALL_PRESETS[idx + 1].id);
-      else if (dx > 0 && idx > 0) handleSelectPreset(ALL_PRESETS[idx - 1].id);
+      if (dx < 0) handleSelectPreset(ALL_PRESETS[(idx + 1) % ALL_PRESETS.length].id);
+      else if (dx > 0) handleSelectPreset(ALL_PRESETS[(idx - 1 + ALL_PRESETS.length) % ALL_PRESETS.length].id);
     }
   }, [activeId, handleSelectPreset]);
 
@@ -146,7 +146,7 @@ export default function Gallery() {
           <span className="text-[14px] font-bold tracking-[-0.01em] md:text-[16px]" style={{ color: 'var(--text)' }}>
             Curvehaus <a href="/changelog" className="text-[10px] font-normal hover:text-[#a1a1aa]" style={{ color: 'var(--text-3)' }}>v1</a>
           </span>
-          <span className="hidden text-[12px] font-normal md:block" style={{ color: 'var(--text-3)' }}>
+          <span className="text-[10px] font-normal md:text-[12px]" style={{ color: 'var(--text-3)' }}>
             Made by <a href="https://ankuryadav.me" target="_blank" rel="noopener noreferrer" className="hover:text-[#a1a1aa]">Ankur</a> with Claude
           </span>
         </div>
@@ -249,16 +249,14 @@ export default function Gallery() {
 
               {/* Previous */}
               <div className="overflow-hidden"
-                onClick={() => prevPreset && handleSelectPreset(prevPreset.id)}
-                style={{ opacity: prevPreset ? 0.15 : 0, cursor: prevPreset ? 'pointer' : 'default', marginLeft: -96 }}>
-                {prevPreset && (
-                  <div className="flex flex-col items-center gap-1">
-                    <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--text)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
-                      {prevPreset.name}
-                    </span>
-                    <MiniPresetShape preset={prevPreset} color="#ffffff" size={18} />
-                  </div>
-                )}
+                onClick={() => handleSelectPreset(prevPreset.id)}
+                style={{ opacity: 0.15, cursor: 'pointer', marginLeft: -96 }}>
+                <div className="flex flex-col items-center gap-1">
+                  <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--text)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                    {prevPreset.name}
+                  </span>
+                  <MiniPresetShape preset={prevPreset} color="#ffffff" size={18} />
+                </div>
               </div>
 
               {/* Active */}
@@ -272,16 +270,14 @@ export default function Gallery() {
 
               {/* Next */}
               <div className="overflow-hidden"
-                onClick={() => nextPreset && handleSelectPreset(nextPreset.id)}
-                style={{ opacity: nextPreset ? 0.15 : 0, cursor: nextPreset ? 'pointer' : 'default', marginRight: -96 }}>
-                {nextPreset && (
-                  <div className="flex flex-col items-center gap-1">
-                    <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--text)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
-                      {nextPreset.name}
-                    </span>
-                    <MiniPresetShape preset={nextPreset} color="#ffffff" size={18} />
-                  </div>
-                )}
+                onClick={() => handleSelectPreset(nextPreset.id)}
+                style={{ opacity: 0.15, cursor: 'pointer', marginRight: -96 }}>
+                <div className="flex flex-col items-center gap-1">
+                  <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--text)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                    {nextPreset.name}
+                  </span>
+                  <MiniPresetShape preset={nextPreset} color="#ffffff" size={18} />
+                </div>
               </div>
             </div>
           </div>

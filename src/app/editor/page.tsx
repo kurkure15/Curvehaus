@@ -519,7 +519,7 @@ function EditorInner() {
       {/* SVG — responsive sizing, shrinks when sheet is open on mobile */}
       <svg ref={svgRef} viewBox="0 0 100 100" fill="none"
         className="w-full flex-1"
-        style={{ maxWidth: isDesktop ? undefined : 'min(90vw, 360px)', maxHeight: dialOpen && !isDesktop ? '45dvh' : 'calc(100dvh - 80px)', transition: 'max-height 0.3s ease' }}>
+        style={{ maxWidth: isDesktop ? undefined : (dialOpen ? 300 : 'min(90vw, 360px)'), maxHeight: isDesktop ? 'calc(100dvh - 80px)' : (dialOpen ? 300 : 'calc(100dvh - 80px)'), transition: 'all 0.3s ease' }}>
         <defs>
           <linearGradient id="trim-gradient" gradientUnits="objectBoundingBox"
             gradientTransform={`rotate(${(state.gradientAngle || 0) - 90} 0.5 0.5)`}>
