@@ -7,12 +7,13 @@ import { gen, norm, cumLen } from '@/lib/curves';
 import { exportReact } from '@/lib/exports';
 import { exportGIF, downloadBlob } from '@/lib/gif-export';
 import { renderLoader } from '@/lib/renderer';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import Hero from '@/components/Hero';
 import BentoCell from '@/components/BentoCell';
 import AngleKnob from '@/components/AngleKnob';
 import MiniPresetShape from '@/components/MiniPresetShape';
 import ColorPickerSheet from '@/components/ColorPickerSheet';
+import ShareSheet from '@/components/ShareSheet';
 
 const BASE_COLORS = ['#ffffff', '#f97316', '#a78bfa', '#34d399', '#f472b6'];
 
@@ -25,6 +26,7 @@ export default function Gallery() {
   const [gradientStops, setGradientStops] = useState<string[]>([]);
   const [gradientAngle, setGradientAngle] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [sheetDragY, setSheetDragY] = useState(0);
   const sheetDragging = useRef(false);
   const [carouselKey, setCarouselKey] = useState(0);
@@ -165,26 +167,32 @@ export default function Gallery() {
           {/* Canvas — 300×300 */}
           <canvas ref={mobileCanvasRef} className="block h-[300px] w-[300px]" />
 
-          {/* Edit icon */}
-          <button onClick={() => {
-            const params = new URLSearchParams({
-              preset: String(activePreset.id),
-              color: baseColor.replace('#', ''),
-              gw: '5.5',
-              tw: '5.5',
-              tl: '0.08',
-              sp: '0.1',
-              go: '0.06',
-            });
-            if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
-            if (gradientAngle) params.set('angle', String(gradientAngle));
-            router.push(`/editor?${params.toString()}`);
-          }}
-            className="mt-[-4px]" style={{ background: 'transparent', border: 'none', color: '#52525b', cursor: 'pointer' }}>
-            <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round">
-              <path d="M7.5 1.5l3 3M2 7.5L8.5 1l3 3L5 10.5 1 11l1-3.5z" />
-            </svg>
-          </button>
+          {/* Edit + Share icons */}
+          <div className="mt-[-4px] flex items-center gap-5">
+            <button onClick={() => {
+              const params = new URLSearchParams({
+                preset: String(activePreset.id),
+                color: baseColor.replace('#', ''),
+                gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.1', go: '0.06',
+              });
+              if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
+              if (gradientAngle) params.set('angle', String(gradientAngle));
+              router.push(`/editor?${params.toString()}`);
+            }}
+              style={{ background: 'transparent', border: 'none', color: '#52525b', cursor: 'pointer', padding: 4 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3l6 6M4 15l11-11 6 6-11 11H4v-6z"/>
+              </svg>
+            </button>
+            <button
+              onTouchEnd={(e) => { e.preventDefault(); setShareOpen(true); }}
+              onClick={() => setShareOpen(true)}
+              style={{ background: 'transparent', border: 'none', color: '#52525b', cursor: 'pointer', padding: 4 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/>
+              </svg>
+            </button>
+          </div>
 
           {/* Spacer */}
           <div className="h-14" />
@@ -227,6 +235,10 @@ export default function Gallery() {
 
         {/* Bottom: picker sheet OR carousel */}
         {pickerOpen ? (
+          <>
+          <div className="absolute inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)' }}
+            onTouchEnd={(e) => { e.preventDefault(); setPickerOpen(false); setSheetDragY(0); setCarouselKey(k => k + 1); }}
+            onClick={() => { setPickerOpen(false); setSheetDragY(0); setCarouselKey(k => k + 1); }} />
           <div className="absolute inset-x-0 bottom-0" style={{
             zIndex: 50,
             transform: `translateY(${sheetDragY}px)`,
@@ -241,6 +253,7 @@ export default function Gallery() {
               />
             </div>
           </div>
+          </>
         ) : (
           <div key={carouselKey} className="absolute left-0 right-0 pb-6"
             onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
@@ -283,6 +296,30 @@ export default function Gallery() {
           </div>
         )}
       </div>
+
+      {/* Share sheet */}
+      {shareOpen && (
+        <ShareSheet
+          preset={activePreset}
+          baseColor={baseColor}
+          gradientStops={gradientStops}
+          gradientAngle={gradientAngle}
+          onClose={() => setShareOpen(false)}
+          onCopyReact={() => { handleCopyReact(); setShareOpen(false); }}
+          onDownloadGif={() => { handleExportGIF(); setShareOpen(false); }}
+          onEdit={() => {
+            const params = new URLSearchParams({
+              preset: String(activePreset.id),
+              color: baseColor.replace('#', ''),
+              gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.1', go: '0.06',
+            });
+            if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
+            if (gradientAngle) params.set('angle', String(gradientAngle));
+            router.push(`/editor?${params.toString()}`);
+            setShareOpen(false);
+          }}
+        />
+      )}
 
       {/* ═══ DESKTOP (unchanged) ═══ */}
       <div className="hidden flex-1 gap-6 overflow-hidden p-6 md:flex">

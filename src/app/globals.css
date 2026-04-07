@@ -14,6 +14,7 @@
 
 html, body { background: var(--bg); color: var(--text); overflow: hidden; position: fixed; width: 100%; height: 100%; }
 
+
 ::-webkit-scrollbar { width: 0; height: 0; }
 
 /* DialKit overrides */
@@ -87,6 +88,21 @@ html, body { background: var(--bg); color: var(--text); overflow: hidden; positi
 @keyframes carouselFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes toastFade {
+  0% { opacity: 0; transform: translateY(-8px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+@keyframes shareSheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.share-sheet-enter {
+  animation: shareSheetUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 @keyframes carouselSlideUp {

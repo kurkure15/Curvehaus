@@ -10,7 +10,7 @@ import {
 } from '@/lib/editor-curves';
 import { exportReact } from '@/lib/editor-exports';
 import { ALL_PRESETS } from '@/lib/presets';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { exportGIF as exportGIFLib, downloadBlob } from '@/lib/gif-export';
 import { norm, cumLen } from '@/lib/curves';
 
@@ -189,7 +189,7 @@ function MobileDialSheet({ onClose }: { onClose: () => void }) {
     <div ref={sheetEl}
       className="fixed bottom-0 z-40 rounded-t-2xl border-t border-[#27272a] bg-[#111113] md:hidden"
       style={{
-        left: 24, right: 24,
+        left: 0, right: 0,
         maxHeight: '55vh',
         overflow: 'visible',
         paddingBottom: 'env(safe-area-inset-bottom, 20px)',
@@ -572,7 +572,12 @@ function EditorInner() {
       )}
 
       {dialOpen && (
+        <>
+        <div className="fixed inset-0 z-30 md:hidden" style={{ background: 'rgba(0,0,0,0.55)' }}
+          onTouchEnd={(e) => { e.preventDefault(); setDialOpen(false); }}
+          onClick={() => setDialOpen(false)} />
         <MobileDialSheet onClose={() => setDialOpen(false)} />
+        </>
       )}
 
       {/* Desktop: floating DialKit panel (conditional — DialKit portals to body) */}
