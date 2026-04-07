@@ -509,7 +509,7 @@ function EditorInner() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className={`flex h-[100dvh] flex-col items-center md:pr-[280px] max-[900px]:md:pr-0 ${isDesktop ? 'justify-center' : ''}`}>
+    <div className={`flex h-[100dvh] flex-col items-center md:pr-[280px] max-[900px]:md:pr-0 ${isDesktop ? 'justify-center' : 'pt-12'}`}>
       {/* Back button */}
       <a href="/" className="fixed left-4 top-4 z-50 flex h-8 items-center gap-1.5 rounded-lg border border-[#27272a] bg-[#111113] px-3 text-[11px] text-[#a1a1aa] transition-colors hover:border-[#3f3f46] hover:text-white">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M19 12H5M5 12l6-6M5 12l6 6" /></svg>
