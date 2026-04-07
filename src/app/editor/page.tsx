@@ -190,7 +190,7 @@ function MobileDialSheet({ onClose }: { onClose: () => void }) {
       className="fixed bottom-0 z-40 rounded-t-2xl border-t border-[#27272a] bg-[#111113] md:hidden"
       style={{
         left: 0, right: 0,
-        maxHeight: '55vh',
+        maxHeight: '44vh',
         overflow: 'visible',
         paddingBottom: 'env(safe-area-inset-bottom, 20px)',
         boxShadow: '0 -8px 30px rgba(0,0,0,0.3)',
@@ -203,7 +203,7 @@ function MobileDialSheet({ onClose }: { onClose: () => void }) {
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <div className="h-1 w-8 rounded-full bg-[#3f3f46]" />
       </div>
-      <div style={{ maxHeight: 'calc(55vh - 44px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ maxHeight: 'calc(44vh - 44px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <DialRoot mode="inline" />
       </div>
     </div>
@@ -519,7 +519,7 @@ function EditorInner() {
       {/* SVG — responsive sizing, shrinks when sheet is open on mobile */}
       <svg ref={svgRef} viewBox="0 0 100 100" fill="none"
         className="w-full flex-1"
-        style={{ maxWidth: isDesktop ? undefined : (dialOpen ? 300 : 'min(90vw, 360px)'), maxHeight: isDesktop ? 'calc(100dvh - 80px)' : (dialOpen ? 300 : 'calc(100dvh - 80px)'), transition: 'all 0.3s ease' }}>
+        style={{ maxWidth: isDesktop ? undefined : (dialOpen ? 300 : 'min(90vw, 360px)'), maxHeight: isDesktop ? 'calc(100dvh - 80px)' : (dialOpen ? 'calc(56dvh - 40px)' : 'calc(100dvh - 80px)'), transition: 'all 0.3s ease' }}>
         <defs>
           <linearGradient id="trim-gradient" gradientUnits="objectBoundingBox"
             gradientTransform={`rotate(${(state.gradientAngle || 0) - 90} 0.5 0.5)`}>
@@ -572,12 +572,7 @@ function EditorInner() {
       )}
 
       {dialOpen && (
-        <>
-        <div className="fixed inset-0 z-30 md:hidden" style={{ background: 'rgba(0,0,0,0.55)' }}
-          onTouchEnd={(e) => { e.preventDefault(); setDialOpen(false); }}
-          onClick={() => setDialOpen(false)} />
         <MobileDialSheet onClose={() => setDialOpen(false)} />
-        </>
       )}
 
       {/* Desktop: floating DialKit panel (conditional — DialKit portals to body) */}
