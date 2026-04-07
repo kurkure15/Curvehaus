@@ -146,7 +146,7 @@ export default function Gallery() {
       <nav className="flex shrink-0 items-center justify-between px-4 py-2 md:px-6 md:py-3">
         <div className="flex flex-col gap-0.5 md:gap-1">
           <span className="text-[14px] font-bold tracking-[-0.01em] md:text-[16px]" style={{ color: 'var(--text)' }}>
-            Curvehaus <a href="/changelog" className="text-[10px] font-normal hover:text-[#a1a1aa]" style={{ color: 'var(--text-3)' }}>v1</a>
+            Curvehaus <a href="/changelog" className="text-[10px] font-normal hover:text-[#a1a1aa]" style={{ color: 'var(--text-3)' }}>v1.1</a>
           </span>
           <span className="text-[10px] font-normal md:text-[12px]" style={{ color: 'var(--text-3)' }}>
             Made by <a href="https://ankuryadav.me" target="_blank" rel="noopener noreferrer" className="hover:text-[#a1a1aa]">Ankur</a> with Claude

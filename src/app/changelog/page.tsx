@@ -4,12 +4,28 @@ import Link from 'next/link';
 
 const VERSIONS = [
   {
-    version: 'v1',
+    version: 'v1.1',
     date: 'April 2026',
     current: true,
     changes: [
+      'Full mobile experience — gallery, editor, share sheet',
+      'Swipeable looping preset carousel',
+      'HSV color picker bottom sheet with drag-to-dismiss',
+      'Touch-friendly angle knob (64px, drag support)',
+      'DialKit editor as bottom sheet with inline mode',
+      'Safari touch patches for DialKit select + color controls',
+      'Share sheet with live canvas animation + React/GIF/Edit actions',
+      'Direct point-range trim rendering (matches desktop)',
+      'Custom centered toast for mobile',
+    ],
+  },
+  {
+    version: 'v1',
+    date: 'April 2026',
+    current: false,
+    changes: [
       'Gallery of 23 animated loader presets',
-      'Canvas 2D renderer with setLineDash trim path',
+      'Canvas 2D renderer with direct point-range trim',
       'Ghost outline via offscreen canvas compositing',
       'HSV color picker with gradient stops + angle knob',
       'React component export with motion.path',
