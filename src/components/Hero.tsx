@@ -139,7 +139,7 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
           ))}
           <button onClick={() => setPickerOpen(!pickerOpen)}
             className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] transition-colors hover:text-[var(--text-secondary)]"
-            style={{ border: 'var(--border-hairline) dashed var(--border-strong)', color: 'var(--text-tertiary)' }}>
+            style={{ border: '1.5px dashed var(--border-strong)', background: 'var(--bg-surface)', color: 'var(--text-tertiary)' }}>
             +
           </button>
         </div>

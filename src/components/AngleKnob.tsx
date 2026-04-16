@@ -37,7 +37,7 @@ export default function AngleKnob({ angle, onChange }: { angle: number; onChange
         onMouseDown={startDrag}
         onTouchStart={startTouch}
         className="relative cursor-pointer rounded-full touch-none"
-        style={{ width: 64, height: 64, boxShadow: 'inset 0 0 0 var(--border-hairline) var(--border-default)' }}
+        style={{ width: 64, height: 64, background: 'var(--bg-surface)', border: '1.5px solid var(--border-default)' }}
       >
         <div
           className="absolute left-1/2 bg-white"

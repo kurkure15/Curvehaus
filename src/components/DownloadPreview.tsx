@@ -91,14 +91,15 @@ export default function DownloadPreview({ preset, onClose, onCopyReact, onDownlo
     <div
       style={{
         position: 'fixed',
-        top: 0, left: 0,
-        width: '100%',
-        height: '100%',
-        zIndex: 'var(--z-modal)',
-        background: 'var(--bg-app)',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100dvh',
+        zIndex: 9999,
+        background: 'var(--bg-elevated)',
         display: 'flex',
         flexDirection: 'column',
-        touchAction: 'none',           // prevent body scroll-through on iOS
+        touchAction: 'none',
         WebkitTapHighlightColor: 'transparent',
       }}
     >
@@ -369,7 +370,7 @@ function ActionButton({ label, onPress, children }: {
     >
       <div style={{
         width: 44, height: 44, borderRadius: 12,
-        background: 'var(--bg-elevated)',
+        background: 'var(--gray-5)',
         color: 'var(--text-primary)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>

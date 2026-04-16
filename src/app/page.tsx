@@ -144,7 +144,7 @@ export default function Gallery() {
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Nav */}
-      <nav className="flex shrink-0 items-center justify-between px-4 py-2 md:px-6 md:py-3">
+      <nav className={`${previewOpen ? 'hidden' : 'flex'} shrink-0 items-center justify-between px-4 py-2 md:px-6 md:py-3 md:flex`}>
         <div className="flex flex-col gap-0.5 md:gap-1">
           <span className="text-[14px] font-semibold tracking-[-0.02em] md:text-[16px]" style={{ color: 'var(--text-primary)' }}>
             Curvehaus <a href="/changelog" className="tabular text-[10px] font-normal transition-colors hover:text-[var(--text-secondary)]" style={{ color: 'var(--text-tertiary)' }}>v1.1</a>
@@ -160,7 +160,7 @@ export default function Gallery() {
       </nav>
 
       {/* ═══ MOBILE ═══ */}
-      <div className="relative flex flex-1 flex-col items-center overflow-hidden md:hidden">
+      <div className={`relative ${previewOpen ? 'hidden' : 'flex'} flex-1 flex-col items-center overflow-hidden md:hidden`}>
 
         {/* Hero — flex-1, centers loader vertically, pb reserves space for bottom carousel */}
         <div className="flex flex-1 flex-col items-center justify-center gap-0" style={{ paddingBottom: 120 }}>
@@ -232,7 +232,7 @@ export default function Gallery() {
               onTouchEnd={(e) => { e.preventDefault(); setPickerOpen(true); }}
               onClick={() => setPickerOpen(true)}
               className="flex items-center justify-center rounded-full"
-              style={{ width: 24, height: 24, border: 'var(--border-hairline) dashed var(--border-strong)', background: 'transparent', color: 'var(--border-strong)', fontSize: 14, cursor: 'pointer' }}>
+              style={{ width: 24, height: 24, border: '1.5px dashed var(--border-strong)', background: 'var(--bg-surface)', color: 'var(--border-strong)', fontSize: 14, cursor: 'pointer' }}>
               +
             </button>
           </div>
@@ -310,8 +310,8 @@ export default function Gallery() {
         )}
       </div>
 
-      {/* Download preview — portalled into document.body to escape fixed/overflow context */}
-      {previewOpen && mounted && createPortal(
+      {/* Download preview — rendered inline, position: fixed covers viewport */}
+      {previewOpen && (
         <DownloadPreview
           preset={activePreset}
           onClose={() => setPreviewOpen(false)}
@@ -328,8 +328,7 @@ export default function Gallery() {
             router.push(`/editor?${params.toString()}`);
             setPreviewOpen(false);
           }}
-        />,
-        document.body
+        />
       )}
 
       {/* ═══ DESKTOP (unchanged) ═══ */}
