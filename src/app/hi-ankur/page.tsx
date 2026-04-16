@@ -14,9 +14,9 @@ export default function ExcludeAnalytics() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#09090b', color: '#fafafa', fontFamily: 'monospace',
+      background: 'var(--bg-app)', color: 'var(--text-primary)', fontFamily: 'monospace',
     }}>
-      <p>{done ? '✓ Analytics excluded. Close this tab.' : 'Setting cookie...'}</p>
+      <p>{done ? '✓ Analytics excluded. Close this tab.' : 'Setting cookie…'}</p>
     </div>
   );
 }

@@ -86,14 +86,15 @@ export default function MiniColorPicker({
     <div ref={wrapRef} className="relative">
       {/* Trigger: swatch + label + hex */}
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 rounded py-1">
-        <div className="h-5 w-5 shrink-0 rounded border border-[#3f3f46]" style={{ background: hex }} />
-        <span className="text-[11px] text-[#a1a1aa]">{label}</span>
-        <span className="ml-auto text-[10px] text-[#52525b]" style={{ fontFamily: 'var(--mono)' }}>{hex}</span>
+        <div className="h-5 w-5 shrink-0 rounded" style={{ background: hex, boxShadow: 'inset 0 0 0 var(--border-hairline) var(--border-strong)' }} />
+        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+        <span className="ml-auto text-[10px]" style={{ fontFamily: 'var(--mono)', color: 'var(--text-tertiary)' }}>{hex}</span>
       </button>
 
       {/* Dropdown picker */}
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border border-[#27272a] bg-[#111113] p-2 shadow-lg">
+        <div className="hairline-border absolute left-0 right-0 top-full mt-1 rounded-lg p-2 shadow-lg"
+          style={{ background: 'var(--bg-surface)', zIndex: 'var(--z-dropdown)' }}>
           {/* SV area — compact */}
           <div
             ref={svRef}
@@ -125,8 +126,8 @@ export default function MiniColorPicker({
                 setHue(h); setSat(s); setVal(vl);
               }
             }}
-            className="w-full rounded border border-[#27272a] bg-transparent px-2 py-0.5 text-[10px] text-[#a1a1aa] outline-none"
-            style={{ fontFamily: 'var(--mono)' }}
+            className="w-full rounded bg-transparent px-2 py-0.5 text-[10px] outline-none"
+            style={{ fontFamily: 'var(--mono)', color: 'var(--text-secondary)', boxShadow: 'inset 0 0 0 var(--border-hairline) var(--border-default)' }}
           />
         </div>
       )}

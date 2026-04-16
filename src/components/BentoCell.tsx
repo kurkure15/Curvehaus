@@ -81,14 +81,19 @@ export default function BentoCell({
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`flex flex-col items-center gap-1 rounded-lg border p-2 transition-colors ${
+      className={`flex flex-col items-center gap-1 rounded-lg p-2 transition-colors ${
         active
-          ? 'border-[#3f3f46] bg-[rgba(255,255,255,0.03)]'
-          : 'border-transparent hover:border-[#27272a] hover:bg-[rgba(255,255,255,0.02)]'
+          ? 'bg-[rgba(255,255,255,0.03)]'
+          : 'hover:bg-[rgba(255,255,255,0.02)]'
       }`}
+      style={{
+        boxShadow: active
+          ? 'inset 0 0 0 var(--border-hairline) var(--border-strong)'
+          : 'inset 0 0 0 var(--border-hairline) transparent',
+      }}
     >
       <canvas ref={canvasRef} style={{ width: 56, height: 56 }} className="block" />
-      <span className="text-[8px] text-[#52525b]" style={{ fontFamily: 'var(--mono)' }}>
+      <span className="text-[8px]" style={{ fontFamily: 'var(--mono)', color: 'var(--text-tertiary)' }}>
         {preset.name}
       </span>
     </button>

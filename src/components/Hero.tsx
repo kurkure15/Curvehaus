@@ -82,7 +82,8 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
   }, [gradientStops, onGradientStopsChange]);
 
   return (
-    <div className="flex flex-1 flex-col rounded-2xl border border-[#27272a]/50 bg-[#111113]">
+    <div className="hairline-border-subtle flex flex-1 flex-col rounded-2xl"
+         style={{ background: 'var(--bg-surface)' }}>
       {/* Shape area — vertically centered */}
       <div className="flex flex-1 flex-col items-center justify-center gap-3">
         <canvas ref={canvasRef} style={{ width: 200, height: 200 }} className="block" />
@@ -105,7 +106,8 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
             p.set('angle', String(Math.round(gradientAngle)));
           }
           startTransition(() => router.push('/editor?' + p.toString()));
-        }} className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#27272a] text-[#52525b] hover:border-[#3f3f46] hover:text-[#a1a1aa]">
+        }} className="hairline-border flex h-[26px] w-[26px] items-center justify-center rounded-full transition-colors hover:text-[var(--text-secondary)]"
+          style={{ color: 'var(--text-tertiary)' }}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
             <path d="M7.5 1.5l3 3M2 7.5L8.5 1l3 3L5 10.5 1 11l1-3.5z" />
           </svg>
@@ -121,7 +123,7 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
               className="rounded-full transition-shadow" title={c}
               style={{
                 width: 18, height: 18, background: c,
-                boxShadow: baseColor === c ? `0 0 0 2px #09090b, 0 0 0 3.5px ${c}` : 'none',
+                boxShadow: baseColor === c ? `0 0 0 2px var(--bg-app), 0 0 0 3.5px ${c}` : 'none',
               }}
             />
           ))}
@@ -136,7 +138,8 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
             </button>
           ))}
           <button onClick={() => setPickerOpen(!pickerOpen)}
-            className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-dashed border-[#3f3f46] text-[11px] text-[#52525b] hover:border-[#a1a1aa] hover:text-[#a1a1aa]">
+            className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] transition-colors hover:text-[var(--text-secondary)]"
+            style={{ border: 'var(--border-hairline) dashed var(--border-strong)', color: 'var(--text-tertiary)' }}>
             +
           </button>
         </div>

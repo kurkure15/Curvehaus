@@ -36,8 +36,8 @@ export default function AngleKnob({ angle, onChange }: { angle: number; onChange
         ref={knobRef}
         onMouseDown={startDrag}
         onTouchStart={startTouch}
-        className="relative cursor-pointer rounded-full border-[1.5px] border-[#27272a] touch-none"
-        style={{ width: 64, height: 64 }}
+        className="relative cursor-pointer rounded-full touch-none"
+        style={{ width: 64, height: 64, boxShadow: 'inset 0 0 0 var(--border-hairline) var(--border-default)' }}
       >
         <div
           className="absolute left-1/2 bg-white"
@@ -49,7 +49,7 @@ export default function AngleKnob({ angle, onChange }: { angle: number; onChange
           }}
         />
       </div>
-      <span className="text-[9px] text-[#52525b]" style={{ fontFamily: 'var(--mono)' }}>
+      <span className="tabular text-[9px]" style={{ fontFamily: 'var(--mono)', color: 'var(--text-tertiary)' }}>
         {Math.round(angle)}°
       </span>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { SECTIONS, ALL_PRESETS } from '@/lib/presets';
 import { gen, norm, cumLen } from '@/lib/curves';
@@ -13,7 +14,7 @@ import BentoCell from '@/components/BentoCell';
 import AngleKnob from '@/components/AngleKnob';
 import MiniPresetShape from '@/components/MiniPresetShape';
 import ColorPickerSheet from '@/components/ColorPickerSheet';
-import ShareSheet from '@/components/ShareSheet';
+import DownloadPreview from '@/components/DownloadPreview';
 
 const BASE_COLORS = ['#ffffff', '#f97316', '#a78bfa', '#34d399', '#f472b6'];
 
@@ -26,7 +27,7 @@ export default function Gallery() {
   const [gradientStops, setGradientStops] = useState<string[]>([]);
   const [gradientAngle, setGradientAngle] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [sheetDragY, setSheetDragY] = useState(0);
   const sheetDragging = useRef(false);
   const [carouselKey, setCarouselKey] = useState(0);
@@ -86,7 +87,7 @@ export default function Gallery() {
   }, [activePreset, baseColor, gradientStops, gradientAngle]);
 
   const handleExportGIF = useCallback(async () => {
-    toast('Recording animation...');
+    toast('Recording animation…');
     const raw = gen(activePreset.type, activePreset.params);
     const valid = raw.filter(p => isFinite(p[0]) && isFinite(p[1]));
     const pts = norm(valid);
@@ -145,15 +146,15 @@ export default function Gallery() {
       {/* Nav */}
       <nav className="flex shrink-0 items-center justify-between px-4 py-2 md:px-6 md:py-3">
         <div className="flex flex-col gap-0.5 md:gap-1">
-          <span className="text-[14px] font-bold tracking-[-0.01em] md:text-[16px]" style={{ color: 'var(--text)' }}>
-            Curvehaus <a href="/changelog" className="text-[10px] font-normal hover:text-[#a1a1aa]" style={{ color: 'var(--text-3)' }}>v1.1</a>
+          <span className="text-[14px] font-semibold tracking-[-0.02em] md:text-[16px]" style={{ color: 'var(--text-primary)' }}>
+            Curvehaus <a href="/changelog" className="tabular text-[10px] font-normal transition-colors hover:text-[var(--text-secondary)]" style={{ color: 'var(--text-tertiary)' }}>v1.1</a>
           </span>
-          <span className="text-[10px] font-normal md:text-[12px]" style={{ color: 'var(--text-3)' }}>
-            Made by <a href="https://ankuryadav.me" target="_blank" rel="noopener noreferrer" className="hover:text-[#a1a1aa]">Ankur</a> with Claude
+          <span className="text-[10px] font-normal md:text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+            Made by <a href="https://ankuryadav.me" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[var(--text-secondary)]">Ankur</a> with Claude
           </span>
         </div>
         <a href="https://github.com/kurkure15/Curvehaus" target="_blank" rel="noopener noreferrer"
-          className="self-center text-[11px] hover:underline md:text-[12px]" style={{ color: 'var(--text-2)' }}>
+          className="self-center text-[11px] hover:underline md:text-[12px]" style={{ color: 'var(--text-secondary)' }}>
           GitHub ↗
         </a>
       </nav>
@@ -179,15 +180,26 @@ export default function Gallery() {
               if (gradientAngle) params.set('angle', String(gradientAngle));
               router.push(`/editor?${params.toString()}`);
             }}
-              style={{ background: 'transparent', border: 'none', color: '#52525b', cursor: 'pointer', padding: 4 }}>
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                const params = new URLSearchParams({
+                  preset: String(activePreset.id),
+                  color: baseColor.replace('#', ''),
+                  gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.1', go: '0.06',
+                });
+                if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
+                if (gradientAngle) params.set('angle', String(gradientAngle));
+                router.push(`/editor?${params.toString()}`);
+              }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: 4 }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 3l6 6M4 15l11-11 6 6-11 11H4v-6z"/>
               </svg>
             </button>
             <button
-              onTouchEnd={(e) => { e.preventDefault(); setShareOpen(true); }}
-              onClick={() => setShareOpen(true)}
-              style={{ background: 'transparent', border: 'none', color: '#52525b', cursor: 'pointer', padding: 4 }}>
+              onTouchEnd={(e) => { e.preventDefault(); setPreviewOpen(true); }}
+              onClick={() => setPreviewOpen(true)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: 4 }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/>
               </svg>
@@ -203,8 +215,9 @@ export default function Gallery() {
               <button key={c} onClick={() => setBaseColor(c)} className="rounded-full"
                 style={{
                   width: 26, height: 26, background: c,
-                  border: c === '#ffffff' ? '1px solid #3f3f46' : 'none',
-                  boxShadow: baseColor === c ? `0 0 0 2px #09090b, 0 0 0 3.5px ${c}` : 'none',
+                  boxShadow: baseColor === c
+                    ? `0 0 0 2px var(--bg-app), 0 0 0 3.5px ${c}`
+                    : c === '#ffffff' ? 'inset 0 0 0 var(--border-hairline) var(--border-strong)' : 'none',
                 }} />
             ))}
           </div>
@@ -213,13 +226,13 @@ export default function Gallery() {
           <div className="mt-2.5 flex items-center gap-2">
             {gradientStops.map((c, i) => (
               <button key={i} onClick={() => setGradientStops(gradientStops.filter((_, j) => j !== i))}
-                className="rounded-full" style={{ width: 20, height: 20, background: c, border: '1.5px solid rgba(255,255,255,0.15)' }} />
+                className="rounded-full" style={{ width: 20, height: 20, background: c, boxShadow: 'inset 0 0 0 var(--border-hairline) rgba(255,255,255,0.18)' }} />
             ))}
             <button type="button"
               onTouchEnd={(e) => { e.preventDefault(); setPickerOpen(true); }}
               onClick={() => setPickerOpen(true)}
               className="flex items-center justify-center rounded-full"
-              style={{ width: 24, height: 24, border: '1.5px dashed #3f3f46', background: 'transparent', color: '#3f3f46', fontSize: 14, cursor: 'pointer' }}>
+              style={{ width: 24, height: 24, border: 'var(--border-hairline) dashed var(--border-strong)', background: 'transparent', color: 'var(--border-strong)', fontSize: 14, cursor: 'pointer' }}>
               +
             </button>
           </div>
@@ -236,11 +249,11 @@ export default function Gallery() {
         {/* Bottom: picker sheet OR carousel */}
         {pickerOpen ? (
           <>
-          <div className="absolute inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)' }}
+          <div className="absolute inset-0" style={{ zIndex: 'calc(var(--z-sheet) - 10)', background: 'rgba(0,0,0,0.55)' }}
             onTouchEnd={(e) => { e.preventDefault(); setPickerOpen(false); setSheetDragY(0); setCarouselKey(k => k + 1); }}
             onClick={() => { setPickerOpen(false); setSheetDragY(0); setCarouselKey(k => k + 1); }} />
           <div className="absolute inset-x-0 bottom-0" style={{
-            zIndex: 50,
+            zIndex: 'var(--z-sheet)',
             transform: `translateY(${sheetDragY}px)`,
             transition: sheetDragging.current ? 'none' : 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
             animation: sheetDragY === 0 ? 'pickerSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) both' : undefined,
@@ -265,7 +278,7 @@ export default function Gallery() {
                 onClick={() => handleSelectPreset(prevPreset.id)}
                 style={{ opacity: 0.15, cursor: 'pointer', marginLeft: -96 }}>
                 <div className="flex flex-col items-center gap-1">
-                  <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--text)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 20, fontWeight: 600, fontFamily: 'var(--mono)', color: 'var(--text-primary)', letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>
                     {prevPreset.name}
                   </span>
                   <MiniPresetShape preset={prevPreset} color="#ffffff" size={18} />
@@ -275,7 +288,7 @@ export default function Gallery() {
               {/* Active */}
               <div key={activeId} className="flex flex-col items-center gap-1 px-4"
                 style={{ animation: 'fadeScaleIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) both' }}>
-                <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--text)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 20, fontWeight: 600, fontFamily: 'var(--mono)', color: 'var(--text-primary)', letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>
                   {activePreset.name}
                 </span>
                 <MiniPresetShape preset={activePreset} color={baseColor} size={18} />
@@ -286,7 +299,7 @@ export default function Gallery() {
                 onClick={() => handleSelectPreset(nextPreset.id)}
                 style={{ opacity: 0.15, cursor: 'pointer', marginRight: -96 }}>
                 <div className="flex flex-col items-center gap-1">
-                  <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--text)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 20, fontWeight: 600, fontFamily: 'var(--mono)', color: 'var(--text-primary)', letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>
                     {nextPreset.name}
                   </span>
                   <MiniPresetShape preset={nextPreset} color="#ffffff" size={18} />
@@ -297,16 +310,13 @@ export default function Gallery() {
         )}
       </div>
 
-      {/* Share sheet */}
-      {shareOpen && (
-        <ShareSheet
+      {/* Download preview — portalled into document.body to escape fixed/overflow context */}
+      {previewOpen && mounted && createPortal(
+        <DownloadPreview
           preset={activePreset}
-          baseColor={baseColor}
-          gradientStops={gradientStops}
-          gradientAngle={gradientAngle}
-          onClose={() => setShareOpen(false)}
-          onCopyReact={() => { handleCopyReact(); setShareOpen(false); }}
-          onDownloadGif={() => { handleExportGIF(); setShareOpen(false); }}
+          onClose={() => setPreviewOpen(false)}
+          onCopyReact={() => { handleCopyReact(); setPreviewOpen(false); }}
+          onDownloadGif={() => { handleExportGIF(); setPreviewOpen(false); }}
           onEdit={() => {
             const params = new URLSearchParams({
               preset: String(activePreset.id),
@@ -316,9 +326,10 @@ export default function Gallery() {
             if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
             if (gradientAngle) params.set('angle', String(gradientAngle));
             router.push(`/editor?${params.toString()}`);
-            setShareOpen(false);
+            setPreviewOpen(false);
           }}
-        />
+        />,
+        document.body
       )}
 
       {/* ═══ DESKTOP (unchanged) ═══ */}

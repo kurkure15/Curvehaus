@@ -85,11 +85,12 @@ export default function ColorPicker({ open, onAdd }: { open: boolean; onAdd: (he
               setHue(h); setSat(s); setVal(vl);
             }
           }}
-          className="flex-1 rounded border border-[#27272a] bg-transparent px-2 py-0.5 text-[10px] text-[#a1a1aa] outline-none"
-          style={{ fontFamily: 'var(--mono)' }}
+          className="flex-1 rounded bg-transparent px-2 py-0.5 text-[10px] outline-none"
+          style={{ fontFamily: 'var(--mono)', color: 'var(--text-secondary)', boxShadow: 'inset 0 0 0 var(--border-hairline) var(--border-default)' }}
         />
         <button onClick={() => onAdd(hex)}
-          className="rounded bg-[#27272a] px-2.5 py-0.5 text-[10px] text-[#fafafa] hover:bg-[#3f3f46]">
+          className="rounded px-2.5 py-0.5 text-[10px] transition-colors"
+          style={{ background: 'var(--border-default)', color: 'var(--text-primary)' }}>
           Add
         </button>
       </div>

@@ -187,13 +187,15 @@ function MobileDialSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div ref={sheetEl}
-      className="fixed bottom-0 z-40 rounded-t-2xl border-t border-[#27272a] bg-[#111113] md:hidden"
+      className="fixed bottom-0 rounded-t-2xl md:hidden"
       style={{
+        zIndex: 'calc(var(--z-sheet) - 10)',
         left: 0, right: 0,
         maxHeight: '44vh',
         overflow: 'visible',
         paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-        boxShadow: '0 -8px 30px rgba(0,0,0,0.3)',
+        background: 'var(--bg-surface)',
+        boxShadow: '0 -8px 30px rgba(0,0,0,0.3), inset 0 var(--border-hairline) 0 0 var(--border-default)',
         transform: `translateY(${translateY}px)`,
         transition: dragStart.current !== null ? 'none' : 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
         animation: translateY === 0 ? 'pickerSlideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) both' : undefined,
@@ -201,7 +203,7 @@ function MobileDialSheet({ onClose }: { onClose: () => void }) {
       {/* Drag handle */}
       <div className="flex justify-center py-3 touch-none cursor-grab"
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-        <div className="h-1 w-8 rounded-full bg-[#3f3f46]" />
+        <div className="h-1 w-8 rounded-full" style={{ background: 'var(--border-strong)' }} />
       </div>
       <div style={{ maxHeight: 'calc(44vh - 44px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <DialRoot mode="inline" />
@@ -262,7 +264,7 @@ function DialPanel({
 
       if (action === 'Export.copyReact') { copyText(exportReact(pts, opts)); toast('React component copied'); }
       else if (action === 'Export.exportGIF') {
-        toast('Recording animation...');
+        toast('Recording animation…');
         const normPts = norm(pts.map(p => p as [number, number]));
         const arcL = cumLen(normPts);
         exportGIFLib(normPts, arcL, anm.speed, styl.strokeColor, [], style.gradientAngle, 300, '#09090b')
@@ -511,7 +513,8 @@ function EditorInner() {
   return (
     <div className={`flex h-[100dvh] flex-col items-center md:pr-[280px] max-[900px]:md:pr-0 ${isDesktop ? 'justify-center' : 'pt-12'}`}>
       {/* Back button */}
-      <a href="/" className="fixed left-4 top-4 z-50 flex h-8 items-center gap-1.5 rounded-lg border border-[#27272a] bg-[#111113] px-3 text-[11px] text-[#a1a1aa] transition-colors hover:border-[#3f3f46] hover:text-white">
+      <a href="/" className="hairline-border fixed left-4 top-4 z-50 flex h-8 items-center gap-1.5 rounded-lg px-3 text-[11px] transition-colors hover:text-[var(--text-primary)]"
+        style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M19 12H5M5 12l6-6M5 12l6 6" /></svg>
         Back
       </a>
@@ -561,9 +564,9 @@ function EditorInner() {
         <button type="button"
           onTouchEnd={(e) => { e.preventDefault(); setDialOpen(true); }}
           onClick={() => setDialOpen(true)}
-          className="fixed right-4 bottom-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-[#27272a] bg-[#111113] md:hidden"
-          style={{ WebkitTapHighlightColor: 'transparent' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round">
+          className="hairline-border fixed right-4 bottom-4 z-50 flex h-11 w-11 items-center justify-center rounded-full md:hidden"
+          style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)', WebkitTapHighlightColor: 'transparent' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
             <path d="M1 14h6M9 8h6M17 16h6" />
           </svg>

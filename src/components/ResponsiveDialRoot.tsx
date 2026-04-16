@@ -16,17 +16,19 @@ export default function ResponsiveDialRoot() {
   if (isMobile) {
     return (
       <div
-        className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-[#27272a] bg-[#18181b]"
+        className="fixed inset-x-0 bottom-0 rounded-t-2xl"
         style={{
+          zIndex: 'var(--z-sheet)',
           maxHeight: '45vh',
           overflowY: 'auto',
           paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-          boxShadow: '0 -8px 30px rgba(0,0,0,0.3)',
+          background: 'var(--bg-elevated)',
+          boxShadow: '0 -8px 30px rgba(0,0,0,0.3), inset 0 var(--border-hairline) 0 0 var(--border-default)',
           WebkitOverflowScrolling: 'touch',
         }}
       >
         <div className="flex justify-center py-2">
-          <div className="h-1 w-8 rounded-full bg-[#3f3f46]" />
+          <div className="h-1 w-8 rounded-full" style={{ background: 'var(--border-strong)' }} />
         </div>
         <DialRoot mode="inline" />
       </div>
