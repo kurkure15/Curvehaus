@@ -69,7 +69,7 @@ export default function BentoCell({
       const ctx = cvs.getContext('2d');
       if (!ctx) return;
       const t = (now - start) / 1000;
-      renderLoader(ctx, sz, d.pts, d.L, t, 0.15, '#ffffff', [], 0);
+      renderLoader(ctx, sz, d.pts, d.L, t, 0.2, '#ffffff', [], 0);
       animRef.current = requestAnimationFrame(tick);
     }
     animRef.current = requestAnimationFrame(tick);

@@ -42,7 +42,8 @@
       "Bash(git branch:*)",
       "Bash(git reset:*)",
       "Bash(git commit -m 'add mobile gate: '\\\\''best on desktop'\\\\'' placeholder:*)",
-      "Bash(git commit -m 'remove agentation from production:*)"
+      "Bash(git commit -m 'remove agentation from production:*)",
+      "Bash(grep -vE \"\\(opts\\\\.color|\\\\\\\\$\\\\\\\\{.*\\\\\\\\}|baseColor|gradientStops|BASE_COLORS|navigator\\\\.clipboard\\)\")"
     ]
   }
 }

@@ -52,6 +52,22 @@ export default function Gallery() {
     sessionStorage.setItem('curvehaus-angle', String(gradientAngle));
   }, [activeId, baseColor, gradientStops, gradientAngle, mounted]);
 
+  // When preview is open, intercept browser/system back to close the preview
+  // instead of popping to whatever was before home (e.g. /editor).
+  useEffect(() => {
+    if (!previewOpen) return;
+    window.history.pushState({ preview: true }, '');
+    const onPop = () => setPreviewOpen(false);
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // If our pushed entry is still the current state, pop it so history stays clean.
+      if (window.history.state?.preview) {
+        window.history.back();
+      }
+    };
+  }, [previewOpen]);
+
   const activePreset = ALL_PRESETS.find(p => p.id === activeId) || ALL_PRESETS[0];
   const activeIdx = ALL_PRESETS.findIndex(p => p.id === activeId);
   const prevPreset = ALL_PRESETS[(activeIdx - 1 + ALL_PRESETS.length) % ALL_PRESETS.length];
@@ -80,7 +96,7 @@ export default function Gallery() {
     const valid = raw.filter(p => isFinite(p[0]) && isFinite(p[1]));
     const gradColor = gradientStops.length > 0 ? gradientStops[0] : undefined;
     const code = exportReact(valid, {
-      color: baseColor, lineWidth: 5.5, speed: 0.1, trimLength: 0.08, size: 48,
+      color: baseColor, lineWidth: 5.5, speed: 0.2, trimLength: 0.08, size: 48,
       gradientColor: gradColor, gradientAngle: gradientStops.length > 0 ? gradientAngle : undefined,
     });
     navigator.clipboard.writeText(code).then(() => toast('React component copied'));
@@ -93,7 +109,7 @@ export default function Gallery() {
     const pts = norm(valid);
     const L = cumLen(pts);
     try {
-      const blob = await exportGIF(pts, L, 0.1, baseColor, gradientStops, gradientAngle, 300, '#09090b');
+      const blob = await exportGIF(pts, L, 0.2, baseColor, gradientStops, gradientAngle, 300, '#09090b');
       downloadBlob(blob, `curvehaus-${activePreset.name.toLowerCase().replace(/\s/g, '-')}.gif`);
       toast('GIF downloaded');
     } catch (err) { toast('Export failed'); console.error(err); }
@@ -133,7 +149,7 @@ export default function Gallery() {
       const ctx = cvs.getContext('2d');
       if (!ctx) return;
       const t = (now - start) / 1000;
-      renderLoader(ctx, sz, mobileData.pts, mobileData.L, t, 0.1, baseColor, gradientStops, gradientAngle);
+      renderLoader(ctx, sz, mobileData.pts, mobileData.L, t, 0.2, baseColor, gradientStops, gradientAngle);
       mobileAnimRef.current = requestAnimationFrame(tick);
     }
     mobileAnimRef.current = requestAnimationFrame(tick);
@@ -174,7 +190,7 @@ export default function Gallery() {
               const params = new URLSearchParams({
                 preset: String(activePreset.id),
                 color: baseColor.replace('#', ''),
-                gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.1', go: '0.06',
+                gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.2', go: '0.06',
               });
               if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
               if (gradientAngle) params.set('angle', String(gradientAngle));
@@ -185,7 +201,7 @@ export default function Gallery() {
                 const params = new URLSearchParams({
                   preset: String(activePreset.id),
                   color: baseColor.replace('#', ''),
-                  gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.1', go: '0.06',
+                  gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.2', go: '0.06',
                 });
                 if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
                 if (gradientAngle) params.set('angle', String(gradientAngle));
@@ -314,19 +330,21 @@ export default function Gallery() {
       {previewOpen && (
         <DownloadPreview
           preset={activePreset}
+          baseColor={baseColor}
+          gradientStops={gradientStops}
+          gradientAngle={gradientAngle}
           onClose={() => setPreviewOpen(false)}
-          onCopyReact={() => { handleCopyReact(); setPreviewOpen(false); }}
-          onDownloadGif={() => { handleExportGIF(); setPreviewOpen(false); }}
+          onCopyReact={() => { handleCopyReact(); }}
+          onDownloadGif={() => { handleExportGIF(); }}
           onEdit={() => {
             const params = new URLSearchParams({
               preset: String(activePreset.id),
               color: baseColor.replace('#', ''),
-              gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.1', go: '0.06',
+              gw: '5.5', tw: '5.5', tl: '0.08', sp: '0.2', go: '0.06',
             });
             if (gradientStops.length > 0) params.set('grad', gradientStops[0].replace('#', ''));
             if (gradientAngle) params.set('angle', String(gradientAngle));
             router.push(`/editor?${params.toString()}`);
-            setPreviewOpen(false);
           }}
         />
       )}

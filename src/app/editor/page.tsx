@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useDialKit, DialRoot } from 'dialkit';
 import {
   generatePoints, getCurveInfo, curveParamDefs,
@@ -330,11 +330,12 @@ function EditorInner() {
   const pathRef = useRef<SVGPathElement>(null);
   const trimRef = useRef<SVGPathElement>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [state, setState] = useState<CurveState>({
     curveType: 'hypotrochoid',
     params: buildParams('hypotrochoid', { a: 96, b: 60, c: 0.75 }),
-    speed: 0.1, trimLength: 0.08,
+    speed: 0.2, trimLength: 0.08,
     strokeColor: '#d42b4e', ghostWidth: 2.0, trimWidth: 2.0,
     ghostOpacity: 0.06, gradientColor: '#378ADD', gradientAngle: 0,
   });
@@ -367,7 +368,7 @@ function EditorInner() {
     const gw = Number(searchParams.get('gw') || 2.0);
     const tw = Number(searchParams.get('tw') || 2.0);
     const tl = Number(searchParams.get('tl') || 0.08);
-    const sp = Number(searchParams.get('sp') || 0.1);
+    const sp = Number(searchParams.get('sp') || 0.2);
     const go = Number(searchParams.get('go') || 0.06);
     const builtParams = buildParams(type, mapped);
     setState(s => ({
@@ -432,6 +433,33 @@ function EditorInner() {
     setState(s => ({ ...s, ...partial }));
   }, []);
 
+  const [fullscreen, setFullscreen] = useState(false);
+
+  const handleCopyReact = useCallback(() => {
+    const s = stateRef.current;
+    const pts = generatePoints(s.curveType, s.params).filter(p => isFinite(p[0]) && isFinite(p[1]));
+    const opts = {
+      color: s.strokeColor, lineWidth: 5.5, ghostOpacity: 0.06,
+      speed: s.speed, trimLength: 0.08, size: 48,
+      gradientColor: s.gradientColor, gradientAngle: s.gradientAngle,
+    };
+    copyText(exportReact(pts, opts));
+    toast('React component copied');
+  }, []);
+
+  const handleExportGIF = useCallback(async () => {
+    const s = stateRef.current;
+    toast('Recording animation…');
+    const pts = generatePoints(s.curveType, s.params).filter(p => isFinite(p[0]) && isFinite(p[1]));
+    const normPts = norm(pts.map(p => p as [number, number]));
+    const arcL = cumLen(normPts);
+    try {
+      const blob = await exportGIFLib(normPts, arcL, s.speed, s.strokeColor, [], s.gradientAngle, 300, '#09090b');
+      downloadBlob(blob, `curvehaus-${Date.now()}.gif`);
+      toast('GIF downloaded');
+    } catch { toast('Export failed'); }
+  }, []);
+
 
   // ═══════════════════════════════════════════════════════════════
   // ANIMATION LOOP — direct point-range trim (same as home page)
@@ -448,7 +476,7 @@ function EditorInner() {
 
       const n = pts.length;
       const trimFrac = s.trimLength || 0.08;
-      const speed = s.speed || 0.1;
+      const speed = s.speed || 0.2;
 
       // Head/tail as fraction — same formula as renderer.ts drawTrim
       const headFrac = ((now / 1000 * speed * 0.30) % 1 + 1) % 1;
@@ -511,18 +539,25 @@ function EditorInner() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className={`flex h-[100dvh] flex-col items-center md:pr-[280px] max-[900px]:md:pr-0 ${isDesktop ? 'justify-center' : 'pt-12'}`}>
+    <div className={`flex h-[100dvh] flex-col items-center md:pr-[280px] max-[900px]:md:pr-0 ${isDesktop || fullscreen ? 'justify-center' : 'pt-12'}`}>
       {/* Back button */}
-      <a href="/" className="hairline-border fixed left-4 top-4 z-50 flex h-8 items-center gap-1.5 rounded-lg px-3 text-[11px] transition-colors hover:text-[var(--text-primary)]"
-        style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M19 12H5M5 12l6-6M5 12l6 6" /></svg>
-        Back
-      </a>
+      {!fullscreen && (
+        <button onClick={() => { if (window.history.length > 1) router.back(); else router.push('/'); }}
+          className="hairline-border fixed left-4 top-4 z-50 flex h-8 items-center gap-1.5 rounded-lg px-3 text-[11px] transition-colors hover:text-[var(--text-primary)]"
+          style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M19 12H5M5 12l6-6M5 12l6 6" /></svg>
+          Back
+        </button>
+      )}
 
-      {/* SVG — responsive sizing, shrinks when sheet is open on mobile */}
+      {/* SVG — responsive sizing, shrinks when sheet is open on mobile; 64×64 in fullscreen */}
       <svg ref={svgRef} viewBox="0 0 100 100" fill="none"
         className="w-full flex-1"
-        style={{ maxWidth: isDesktop ? undefined : (dialOpen ? 300 : 'min(90vw, 360px)'), maxHeight: isDesktop ? 'calc(100dvh - 80px)' : (dialOpen ? 'calc(56dvh - 40px)' : 'calc(100dvh - 80px)'), transition: 'all 0.3s ease' }}>
+        style={{
+          maxWidth: fullscreen ? 64 : (isDesktop ? undefined : (dialOpen ? 300 : 'min(90vw, 360px)')),
+          maxHeight: fullscreen ? 64 : (isDesktop ? 'calc(100dvh - 80px)' : (dialOpen ? 'calc(56dvh - 40px)' : 'calc(100dvh - 80px)')),
+          transition: 'all 0.3s ease',
+        }}>
         <defs>
           <linearGradient id="trim-gradient" gradientUnits="objectBoundingBox"
             gradientTransform={`rotate(${(state.gradientAngle || 0) - 90} 0.5 0.5)`}>
@@ -557,21 +592,61 @@ function EditorInner() {
         svgRef={svgRef}
       />
 
-      {/* Mobile: label + FAB aligned at bottom */}
-      {!dialOpen && (
-        <>
-        <span className="fixed left-0 right-0 z-40 text-center text-[13px] font-medium text-white/60 pointer-events-none md:hidden" style={{ bottom: 'calc(1rem + 10px)' }}>{info.name}</span>
+      {/* Mobile: DialKit FAB — top-right */}
+      {!dialOpen && !fullscreen && (
         <button type="button"
           onTouchEnd={(e) => { e.preventDefault(); setDialOpen(true); }}
           onClick={() => setDialOpen(true)}
-          className="hairline-border fixed right-4 bottom-4 z-50 flex h-11 w-11 items-center justify-center rounded-full md:hidden"
+          className="hairline-border fixed right-4 top-4 z-50 flex h-8 w-8 items-center justify-center rounded-lg md:hidden"
           style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)', WebkitTapHighlightColor: 'transparent' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
             <path d="M1 14h6M9 8h6M17 16h6" />
           </svg>
         </button>
-        </>
+      )}
+
+      {/* Bottom action buttons — React / GIF / Full */}
+      {!fullscreen && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center"
+          style={{ gap: 12, paddingLeft: 24, paddingRight: 24, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)', touchAction: 'manipulation' }}>
+          <EditorActionButton label="React" onPress={handleCopyReact}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          </EditorActionButton>
+          <EditorActionButton label="GIF" onPress={handleExportGIF}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4" />
+              <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+            </svg>
+          </EditorActionButton>
+          <EditorActionButton label="Full" onPress={() => setFullscreen(true)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+            </svg>
+          </EditorActionButton>
+        </div>
+      )}
+
+      {/* Fullscreen exit × */}
+      {fullscreen && (
+        <button
+          onClick={() => setFullscreen(false)}
+          aria-label="Exit fullscreen"
+          className="hairline-border fixed right-5 z-50 flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:text-[var(--text-primary)]"
+          style={{
+            top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+            background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       )}
 
       {dialOpen && (
@@ -581,5 +656,34 @@ function EditorInner() {
       {/* Desktop: floating DialKit panel (conditional — DialKit portals to body) */}
       {mounted && isDesktop && <DialRoot position="top-right" />}
     </div>
+  );
+}
+
+function EditorActionButton({ label, onPress, children }: {
+  label: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onPress(); }}
+      onClick={onPress}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
+        padding: 0,
+      }}
+    >
+      <div style={{
+        width: 44, height: 44, borderRadius: 12,
+        color: 'var(--text-primary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {children}
+      </div>
+      <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{label}</span>
+    </button>
   );
 }

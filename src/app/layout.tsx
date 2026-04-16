@@ -5,7 +5,6 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import OwnerFilteredAnalytics from '@/components/OwnerFilteredAnalytics';
 import MobileGate from '@/components/MobileGate';
-import MobileToast from '@/components/MobileToast';
 
 export const metadata: Metadata = {
   title: 'Curvehaus — Mathematical Curve Loaders',
@@ -22,8 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="antialiased" style={{ fontFamily: 'var(--font-geist-sans), -apple-system, sans-serif' }}>
         <MobileGate>{children}</MobileGate>
-        <div className="hidden md:block"><Toaster theme="dark" position="bottom-left" toastOptions={{ style: { background: 'var(--bg-surface)', border: '0.5px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '12px', width: 'auto', minWidth: 0, maxWidth: '200px', padding: '8px 14px' } }} /></div>
-        <MobileToast />
+        <Toaster theme="dark" position="bottom-center" offset={{ top: '0px', right: '0px', bottom: '120px', left: '0px' }} mobileOffset={{ top: '0px', right: '0px', bottom: '120px', left: '0px' }} toastOptions={{ style: { background: 'var(--bg-surface)', border: '0.5px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '12px', width: 'auto', minWidth: 0, maxWidth: '200px', padding: '8px 14px', left: '50%', right: 'auto', transform: 'translateX(-50%)' } }} />
         <OwnerFilteredAnalytics />
       </body>
     </html>

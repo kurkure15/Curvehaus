@@ -65,7 +65,7 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
       const ctx = cvs.getContext('2d');
       if (!ctx) return;
       const t = (now - start) / 1000;
-      renderLoader(ctx, sz, data.pts, data.L, t, 0.1, baseColor, gradientStops, gradientAngle);
+      renderLoader(ctx, sz, data.pts, data.L, t, 0.2, baseColor, gradientStops, gradientAngle);
       animRef.current = requestAnimationFrame(tick);
     }
     animRef.current = requestAnimationFrame(tick);
@@ -99,7 +99,7 @@ export default function Hero({ preset, baseColor, onBaseColorChange, gradientSto
           p.set('gw', '5.5');   // ghost width (matches gallery renderer)
           p.set('tw', '5.5');   // trim width
           p.set('tl', '0.08');  // trim length (8% of path)
-          p.set('sp', '0.1');   // speed
+          p.set('sp', '0.2');   // speed
           p.set('go', '0.06');  // ghost opacity
           if (gradientStops.length > 0) {
             p.set('grad', gradientStops[0].replace('#', ''));
